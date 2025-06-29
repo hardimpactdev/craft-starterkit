@@ -7,29 +7,49 @@
         "laravel",
         "framework"
     ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../waymaker"
+        },
+        {
+            "type": "path",
+            "url": "../liftoff-laravel"
+        },
+        {
+            "type": "path",
+            "url": "../../laravel-telescope-toolbar"
+        }
+    ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
-        "based/momentum-trail": "^0.4.0",
+        "php": "^8.4",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
+        "laravel/horizon": "^5.31",
         "laravel/tinker": "^2.10.1",
+        "laravel/wayfinder": "^0.1.2",
+        "hardimpactdev/liftoff-laravel": "@dev",
+        "hardimpactdev/waymaker": "@dev",
+        "spatie/laravel-csp": "^3.8",
         "spatie/laravel-data": "^4.14",
-        "spatie/laravel-typescript-transformer": "^2.5",
-        "tightenco/ziggy": "^2.4"
+        "spatie/laravel-typescript-transformer": "^2.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "fruitcake/laravel-telescope-toolbar": "@dev",
         "larastan/larastan": "^3.0",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.21",
         "laravel/sail": "^1.41",
+        "laravel/telescope": "^5.7",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "pestphp/pest": "^3.7",
         "pestphp/pest-plugin-drift": "^3.0",
         "pestphp/pest-plugin-laravel": "^3.1",
         "projektgopher/whisky": "^0.7.4",
+        "rector/rector": "^2.0",
         "spatie/pest-plugin-route-testing": "^1.1"
     },
     "autoload": {
@@ -40,6 +60,9 @@
         }
     },
     "autoload-dev": {
+        "files": [
+            "app/helpers.php"
+        ],
         "psr-4": {
             "Tests\\": "tests/"
         }
@@ -64,9 +87,12 @@
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite"
         ],
-        "test": "vendor/bin/pest",
+        "test": "vendor/bin/pest --parallel",
         "lint": "vendor/bin/pint",
-        "analyse": "vendor/bin/phpstan analyse"
+        "analyse": "vendor/bin/phpstan analyse",
+        "rector": "vendor/bin/rector",
+        "check": "composer test && composer analyse",
+        "available-updates": "composer outdated -D"
     },
     "extra": {
         "laravel": {
