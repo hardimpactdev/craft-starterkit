@@ -26,9 +26,8 @@ $setupSteps = [
     'setupWhiskey',
     'runMigrations',
     'secureHerd',
+    'linkHerd',
     'askDeleteScript',
-    'openInBrowser',
-    'startBunDev',
 ];
 
 // Helper function to get the root folder name
@@ -382,41 +381,6 @@ function linkHerd($envContent, $updated)
     return [$envContent, $updated];
 }
 
-// Open in browser
-function openInBrowser($envContent, $updated)
-{
-    // Extract APP_URL from .env content
-    if (preg_match('/APP_URL=(.*)/', $envContent, $matches)) {
-        $appUrl = trim($matches[1]);
-
-        // Create a background process to open the browser after a delay
-        echo "🌐 Setting up delayed browser opening (will open in 3 seconds)...\n";
-
-        // Create a temporary script file to open the browser after delay
-        $tempScript = sys_get_temp_dir().'/open_browser_'.uniqid().'.php';
-        $scriptContent = <<<EOT
-<?php
-// Wait for 3 seconds
-sleep(3);
-// Open the browser
-exec('open -n {$appUrl}');
-// Delete this temporary script
-unlink(__FILE__);
-EOT;
-
-        file_put_contents($tempScript, $scriptContent);
-
-        // Execute the temporary script in the background
-        exec("php {$tempScript} > /dev/null 2>&1 &");
-
-        echo "✅ Browser will open automatically in a few seconds.\n\n";
-    } else {
-        echo "❌ Could not find APP_URL in .env file to open in browser.\n\n";
-    }
-
-    return [$envContent, $updated];
-}
-
 // Ask if the script should delete itself
 function askDeleteScript($envContent, $updated)
 {
@@ -439,21 +403,6 @@ function askDeleteScript($envContent, $updated)
             echo "❌ Failed to delete setup script.\n";
         }
     }
-
-    return [$envContent, $updated];
-}
-
-// Start bun run dev
-function startBunDev($envContent, $updated)
-{
-    echo "🚀 Starting bun development server...\n";
-    echo "✅ Running 'bun run dev' in the terminal...\n";
-
-    // Pass control to npm run dev in the terminal
-    passthru('bun run dev');
-
-    // Note: The script will continue only after npm run dev is terminated
-    echo "✅ npm development server has been stopped.\n\n";
 
     return [$envContent, $updated];
 }
