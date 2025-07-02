@@ -55,11 +55,11 @@ export function aliasConfiguration() {
                 replacement: "@/",
                 folderName: "liftoff/ui",
                 localPath: "./resources/js",
-                externalPath: "../liftoff-ui/src",
+                externalPath: "../../liftoff/ui/src",
             },
             {
-                regex: /^@hardimpact\/liftoff-ui/,
-                replacement: "../liftoff-ui/index.ts",
+                regex: /^@hardimpactdev\/liftoff-ui/,
+                replacement: "../../liftoff/ui/index.ts",
             },
         ]),
     };

@@ -46,10 +46,27 @@ You are an expert in TypeScript, Node.js, Vue 3, VueUse, and Tailwind.
   - `vite.config.ts` for auto-import configurations.
 - Do **not** manually import methods or components listed in these files.
 - Examples of auto-imported items:
-  - Vue methods (`ref`, `computed`, etc.).
-  - Inertia.js methods (`useForm`, `Link`, etc.).
+  - Vue methods (`ref`, `computed`, `reactive`, `watch`, etc.).
+  - Inertia.js components and methods (`Head`, `Link`, `useForm`, `usePage`, etc.).
   - VueUse composables.
   - UI components from configured libraries (`vite.config.ts`).
+  - **Controllers object** for route generation (Waymaker paradigm).
+
+## Route Generation with Waymaker
+- Routes are **automatically generated** by Waymaker and available via the `Controllers` object.
+- Do **not** hardcode route URLs or manually construct paths.
+- Use the auto-imported `Controllers` object:
+  ```ts
+  // Navigation links
+  <Link :href="Controllers.ProjectController.index()">Projects</Link>
+  <Link :href="Controllers.ProjectController.show({ project: projectId })">View Project</Link>
+  
+  // Form submissions
+  form.post(Controllers.ProjectController.store())
+  form.patch(Controllers.ProjectController.update({ project: project.id }))
+  ```
+- Route naming follows: `Controllers.{ControllerName}.{methodName}(parameters?)`
+- Parameters are passed as objects when needed.
 
 ## Forms
 - Expect a **form prop** to be available in components handling forms:
@@ -76,6 +93,10 @@ const form = useForm(props.resource);
 - Do **not** introduce new UI component libraries or frameworks.
 - Prefer native HTML elements if no suitable component exists.
 - Before adding new components, check `resources/js/Components` for reusable options.
+- Common auto-imported components:
+  - `Head` - For setting page title
+  - `Link` - For Inertia navigation
+  - Project-specific components from `resources/js/components/`
 
 ## Template Structure
 - Keep the **original template structure** unless explicitly instructed otherwise.

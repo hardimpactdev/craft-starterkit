@@ -26,45 +26,65 @@ alwaysApply: true
 ## Migrations
 - Use **descriptive** migration names.
 
-## Routes
-- Define all routes in **`web.php`**.
-- Routes must use a **controller** and be **named**.
-- Route naming convention: `{resource}.{method}` (e.g., `users.show` for `UsersController@show`).
-- Each **public (unprotected) GET route** must be tested in `tests\Feature\RoutesTest.php` using `spatie/pest-plugin-route-testing`.
-- Run `RoutesTest.php` after modifying or adding a public GET route.
+## Routes (Waymaker Paradigm)
+- **DO NOT manually define routes** in `web.php`.
+- Routes are **automatically generated** by Waymaker based on controller attributes.
+- Use Waymaker PHP attributes on controller methods:
+  - `#[Get]` for GET requests
+  - `#[Post]` for POST requests
+  - `#[Patch]` for PATCH requests
+  - `#[Delete]` for DELETE requests
+  - `#[Put]` for PUT requests
+- Route naming convention: Automatically generated as `Controllers.{ControllerName}.{methodName}`.
+- Customize routes with attribute parameters:
+  - `uri`: Custom URI path
+  - `parameters`: Route parameters (e.g., `['project']`)
+  - `middleware`: Route-specific middleware
+- Set controller route prefix: `protected static string $routePrefix = 'resources';`
+- Run `php artisan waymaker:make` to regenerate routes after controller changes.
 
 ## Controllers
 - Use **resourceful controllers** with only the following public methods: `index`, `show`, `create`, `store`, `edit`, `update`, `destroy`.
 - **Private methods** are allowed within controllers.
-- Use **FormRequest** for all form validation.
-- Create models using the **static `create()` method**, passing validated FormRequest data.
-- Update models using the **static `update()` method**, passing validated FormRequest data.
-- Always expect a **DTO** (Data Transfer Object) in FormRequests:
+- **Must use Waymaker attributes** on all public methods:
   ```php
-  class SongController
+  use HardImpact\Waymaker\{Get, Post, Patch, Delete};
+  
+  class ProjectController extends Controller
   {
-      public function __invoke(SongRequest $request): SongData
-      {
-          $data = $request->getData();
-          
-          $song = Song::create($data->toArray());
-          
-          return $data;
-      }
+      #[Get]
+      public function index(): Response
+      
+      #[Get(uri: '/projects/create')]
+      public function create(): Response
+      
+      #[Post]
+      public function store(Request $request): RedirectResponse
+      
+      #[Get(parameters: ['project'])]
+      public function show(Project $project): Response
   }
   ```
-- When creating/updating models:
-  - Use `$request->getData()` to get validated data.
-  - Use `$data->toArray()` when passing data to `create()` or `update()`.
-  - **Do not manually map DTO properties to models**.
-- Controller classes should be **final** and **read-only**.
+- **Validation**: Always use FormRequest with corresponding DTO for validation.
+  - Never use inline validation in controllers.
+- Create models using validated data:
+  ```php
+  $project = Project::create($validated);
+  ```
+- Update models using validated data:
+  ```php
+  $project->update($validated);
+  ```
 - This project uses **Laravel Inertia with Vue**:
   - Always return views using `Inertia::render(viewPath, data)`.
-  - If a Vue file is missing, create it according to `Vue.mdc` guidelines.
+  - Return `Inertia\Response` for GET methods.
+  - Return `Illuminate\Http\RedirectResponse` for POST/PATCH/DELETE methods.
+  - If a Vue file is missing, create it according to `Frontend.mdc` guidelines.
 
-## FormRequest
-- A **FormRequest** is required for each controller method that validates input.
-- Each FormRequest must specify a DTO as follows:
+## FormRequest (Required for all validation)
+- **Always use FormRequest** for any validation, regardless of complexity.
+- **Never use inline validation** in controllers.
+- All FormRequests must use DTOs:
   ```php
   class SongRequest extends FormRequest
   {

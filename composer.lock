@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "98ec589ce68dd76b9a50eebd8d344308",
+    "content-hash": "7772aa519c5b508833d100658e58fd17",
     "packages": [
         {
             "name": "amphp/amp",
@@ -1959,7 +1959,7 @@
             "version": "dev-main",
             "dist": {
                 "type": "path",
-                "url": "../liftoff-laravel",
+                "url": "../../liftoff/laravel",
                 "reference": "7f10a17b1ab5a5428602c32d39f7b54ed806dc64"
             },
             "require": {
@@ -2048,7 +2048,7 @@
             "version": "dev-main",
             "dist": {
                 "type": "path",
-                "url": "../../waymaker",
+                "url": "../../packages/waymaker",
                 "reference": "5cd880d4e2a7b96d0f745a49c08e8b4e19631678"
             },
             "require": {
@@ -8246,7 +8246,7 @@
             "version": "dev-master",
             "dist": {
                 "type": "path",
-                "url": "../../laravel-telescope-toolbar",
+                "url": "../../packages/laravel-telescope-toolbar",
                 "reference": "70cd941f9c9f4c2bfd60e9673339f224b66a6f13"
             },
             "require": {

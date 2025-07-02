@@ -1,0 +1,42 @@
+# Vue Component Development Rules
+
+## Component Structure
+- **Script block first**: Always place `<script setup>` block at the top of the component
+- **Template second**: Template block comes after the script
+- **No scoped styles**: Do not use `<style scoped>`, use Tailwind CSS classes instead
+
+## Script Block Rules
+- **Use TypeScript**: Always use `<script setup lang="ts">`
+- **Empty script blocks**: If no logic needed, still include empty `<script setup lang="ts">` block
+- **Props interface**: Define props with TypeScript interfaces when needed
+
+## Template Rules
+- **No IDs**: Do not add id attributes to elements unless specifically required
+- **No data attributes**: Do not add data-name or similar attributes
+- **Tailwind classes**: Use Tailwind utility classes exclusively for styling
+- **Tailwind preferences**: Use standard Tailwind classes (e.g., `w-30`) instead of arbitrary values (e.g., `w-[120px]`)
+
+## Example Component Structure
+```vue
+<script setup lang="ts">
+// Props, composables, and logic here
+</script>
+
+<template>
+  <div class="tailwind-classes-here">
+    <!-- Component content -->
+  </div>
+</template>
+```
+
+## Import Rules
+- Follow the auto-import configuration from Frontend.mdc
+- Do not manually import Vue methods, Inertia components, or VueUse composables
+
+## Form Handling
+- Use `useForm` from Inertia for form handling
+- Always use `form.submit()` method, not HTTP-specific methods
+
+## Component Naming
+- Use PascalCase for component file names
+- Components are auto-imported from `resources/js/components/`
