@@ -1,4 +1,17 @@
-# Vue Component Development Rules
+---
+description: Vue 3 component development rules and patterns
+globs: ["**/*.vue"]
+alwaysApply: false
+---
+## Vue 3 and Composition API Best Practices
+- Use the Composition API and declarative programming patterns; avoid the Options API.
+- Prefer iteration and modularization over code duplication.
+- Ensure each file starts with `<script setup>` followed by the `<template>` tag.
+- Use **ref**, **reactive**, and **computed** for reactive state management.
+- Prefer `defineProps` and `defineEmits` for prop handling and event emission.
+- Use `provide/inject` for dependency injection where appropriate.
+- Extract reusable logic into composables (`useXYZ.ts`).
+- Keep template logic clean and minimal—move logic into the script section.
 
 ## Component Structure
 - **Script block first**: Always place `<script setup>` block at the top of the component
@@ -29,14 +42,11 @@
 </template>
 ```
 
-## Import Rules
-- Follow the auto-import configuration from Frontend.mdc
-- Do not manually import Vue methods, Inertia components, or VueUse composables
-
-## Form Handling
-- Use `useForm` from Inertia for form handling
-- Always use `form.submit()` method, not HTTP-specific methods
-
 ## Component Naming
 - Use PascalCase for component file names
 - Components are auto-imported from `resources/js/components/`
+
+## Performance and Optimization
+- Use lazy loading and dynamic imports for large components.
+- Avoid unnecessary reactivity—use `computed` instead of `watch` where possible.
+- Minimize DOM manipulations; avoid v-if inside loops if v-show can be used.

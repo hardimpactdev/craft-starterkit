@@ -1,0 +1,21 @@
+---
+description: Database, Eloquent, and migration guidelines
+globs: ["**/database/**/*.php", "**/app/Models/**/*.php"]
+alwaysApply: false
+---
+## Database and Eloquent
+- Use **Eloquent ORM** and Query Builder over raw SQL queries whenever possible.
+- Create **query scopes** in models when encountering repetitive query patterns.
+
+## Migrations
+- Use **descriptive** migration names.
+
+## Models, Factories, and Seeders
+- Document **model properties** using PHPDoc annotations.
+- Always define **`protected $fillable`** and explicitly list fillable attributes.
+- **Disable lazy loading**: Always eager-load relationships.
+- Apply **attribute casts** (e.g., for dates and booleans).
+- Create a **Factory** for each model.
+- Create a **Seeder** for each model.
+- Update **factories and seeders** when modifying model properties.
+- **Models should be final classes**.

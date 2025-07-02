@@ -1,0 +1,32 @@
+---
+description: Auto-import configuration and usage
+globs: ["**/resources/js/**/*.ts", "**/resources/js/**/*.vue"]
+alwaysApply: false
+---
+## Auto-Imported Components and Methods
+- The project uses `unplugin-auto-import` and `unplugin-vue-components` for automatic imports.
+- Before manually importing, check:
+  - `resources/js/types/auto-imports.d.ts` for globally available methods.
+  - `resources/js/types/components.d.ts` for globally available components.
+  - `vite.config.ts` for auto-import configurations.
+- Do **not** manually import methods or components listed in these files.
+- Examples of auto-imported items:
+  - Vue methods (`ref`, `computed`, `reactive`, `watch`, etc.).
+  - Inertia.js components and methods (`Head`, `Link`, `useForm`, `usePage`, etc.).
+  - VueUse composables.
+  - UI components from configured libraries (`vite.config.ts`).
+  - **Controllers object** for route generation (Waymaker paradigm).
+
+## Import Rules
+- Follow the auto-import configuration
+- Do not manually import Vue methods, Inertia components, or VueUse composables
+
+## Component Usage
+- Only use components that are already available in the project.
+- Do **not** introduce new UI component libraries or frameworks.
+- Prefer native HTML elements if no suitable component exists.
+- Before adding new components, check `resources/js/Components` for reusable options.
+- Common auto-imported components:
+  - `Head` - For setting page title
+  - `Link` - For Inertia navigation
+  - Project-specific components from `resources/js/components/`

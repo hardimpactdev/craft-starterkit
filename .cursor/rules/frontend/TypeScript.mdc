@@ -1,0 +1,27 @@
+---
+description: TypeScript conventions and best practices
+globs: ["**/*.ts", "**/*.d.ts"]
+alwaysApply: false
+---
+## TypeScript Best Practices
+- Use TypeScript exclusively; prefer **types** over **interfaces**.
+- Avoid `enum`; use `const` objects instead for better tree-shaking.
+- Use Vue 3 with TypeScript, leveraging `defineComponent` and `PropType`.
+- Always type function arguments and return values.
+
+## Code Style and Structure
+- Write concise, well-structured TypeScript code with accurate, technical examples.
+- Use clear, descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`).
+- Follow a structured file organization:
+  - Exported components
+  - Composables
+  - Helpers
+  - Static content
+  - Types
+- Keep components small and focused, ensuring single responsibility.
+
+## Naming Conventions
+- Use **lowercase with dashes** for directories (e.g., `components/auth-wizard`).
+- Use **PascalCase** for component names (e.g., `AuthWizard.vue`).
+- Use **camelCase** for composables (e.g., `useAuthState.ts`).
+- Maintain consistency across files and folders.

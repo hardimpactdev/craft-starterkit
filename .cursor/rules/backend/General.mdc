@@ -1,0 +1,29 @@
+---
+description: General PHP and Laravel conventions
+globs: ["**/*.php"]
+alwaysApply: false
+---
+## General PHP & Laravel Conventions
+- This project uses **PHP 8.4**.
+- Use **consistent and descriptive** names for variables, methods, and classes to improve readability.
+- Follow Laravel's conventions:
+  - **Singular** for models (e.g., `User.php`).
+  - **Plural** for controllers managing models (e.g., `UsersController.php`).
+- For singular functionalities like registration or dashboards, use a singular controller name (e.g., `RegisterController`, `DashboardController`).
+- Naming conventions:
+  - **PascalCase** for class names.
+  - **camelCase** for method names.
+  - **snake_case** for database columns.
+- **Avoid repeating plain string values** (e.g., statuses). Use an Enum instead, placed in `app\Enums`.
+- Prefer `match()` over `switch()` for better readability and maintainability.
+- Do **not** install or add Composer packages without prior approval.
+- Do **not** create or modify migrations unrelated to the current task.
+
+## Security
+- Prevent **SQL injection vulnerabilities** by always using FormRequests to validate user input.
+- Avoid exposing sensitive data in responses.
+
+## Static Code Analysis
+- We use **Larastan (`larastan/larastan`)** for static analysis.
+- Always run `composer analyse` after adding a new feature.
+- Use **Larastan level 9**.

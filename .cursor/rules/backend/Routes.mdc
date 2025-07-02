@@ -1,0 +1,59 @@
+---
+description: Waymaker routing system and controller guidelines
+globs: ["**/app/Http/Controllers/**/*.php", "**/routes/**/*.php"]
+alwaysApply: false
+---
+## Routes (Waymaker Paradigm)
+- **DO NOT manually define routes** in `web.php`.
+- Routes are **automatically generated** by Waymaker based on controller attributes.
+- Use Waymaker PHP attributes on controller methods:
+  - `#[Get]` for GET requests
+  - `#[Post]` for POST requests
+  - `#[Patch]` for PATCH requests
+  - `#[Delete]` for DELETE requests
+  - `#[Put]` for PUT requests
+- Route naming convention: Automatically generated as `Controllers.{ControllerName}.{methodName}`.
+- Customize routes with attribute parameters:
+  - `uri`: Custom URI path
+  - `parameters`: Route parameters (e.g., `['project']`)
+  - `middleware`: Route-specific middleware
+- Set controller route prefix: `protected static string $routePrefix = 'resources';`
+- Run `php artisan waymaker:make` to regenerate routes after controller changes.
+
+## Controllers
+- Use **resourceful controllers** with only the following public methods: `index`, `show`, `create`, `store`, `edit`, `update`, `destroy`.
+- **Private methods** are allowed within controllers.
+- **Must use Waymaker attributes** on all public methods:
+  ```php
+  use HardImpact\Waymaker\{Get, Post, Patch, Delete};
+  
+  class ProjectController extends Controller
+  {
+      #[Get]
+      public function index(): Response
+      
+      #[Get(uri: '/projects/create')]
+      public function create(): Response
+      
+      #[Post]
+      public function store(Request $request): RedirectResponse
+      
+      #[Get(parameters: ['project'])]
+      public function show(Project $project): Response
+  }
+  ```
+- **Validation**: Always use FormRequest with corresponding DTO for validation.
+  - Never use inline validation in controllers.
+- Create models using validated data:
+  ```php
+  $project = Project::create($validated);
+  ```
+- Update models using validated data:
+  ```php
+  $project->update($validated);
+  ```
+- This project uses **Laravel Inertia with Vue**:
+  - Always return views using `Inertia::render(viewPath, data)`.
+  - Return `Inertia\Response` for GET methods.
+  - Return `Illuminate\Http\RedirectResponse` for POST/PATCH/DELETE methods.
+  - If a Vue file is missing, create it according to `Frontend.mdc` guidelines.

@@ -1,0 +1,20 @@
+---
+description: Frontend routing with Waymaker and Inertia
+globs: ["**/resources/js/**/*.ts", "**/resources/js/**/*.vue"]
+alwaysApply: false
+---
+## Route Generation with Waymaker
+- Routes are **automatically generated** by Waymaker and available via the `Controllers` object.
+- Do **not** hardcode route URLs or manually construct paths.
+- Use the auto-imported `Controllers` object:
+  ```ts
+  // Navigation links
+  <Link :href="Controllers.ProjectController.index()">Projects</Link>
+  <Link :href="Controllers.ProjectController.show({ project: projectId })">View Project</Link>
+  
+  // Form submissions
+  form.post(Controllers.ProjectController.store())
+  form.patch(Controllers.ProjectController.update({ project: project.id }))
+  ```
+- Route naming follows: `Controllers.{ControllerName}.{methodName}(parameters?)`
+- Parameters are passed as objects when needed.
