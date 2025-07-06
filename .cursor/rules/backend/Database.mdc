@@ -1,21 +1,1052 @@
 ---
-description: Database, Eloquent, and migration guidelines
-globs: ["**/database/**/*.php", "**/app/Models/**/*.php"]
-alwaysApply: false
+description: Database design, migrations, and query patterns - comprehensive rules for Laravel
+globs: ["**/database/**/*.php", "**/config/database.php"]
+alwaysApply: true
 ---
-## Database and Eloquent
-- Use **Eloquent ORM** and Query Builder over raw SQL queries whenever possible.
-- Create **query scopes** in models when encountering repetitive query patterns.
 
-## Migrations
-- Use **descriptive** migration names.
+# Database Development Rules and Best Practices
 
-## Models, Factories, and Seeders
-- Document **model properties** using PHPDoc annotations.
-- Always define **`protected $fillable`** and explicitly list fillable attributes.
-- **Disable lazy loading**: Always eager-load relationships.
-- Apply **attribute casts** (e.g., for dates and booleans).
-- Create a **Factory** for each model.
-- Create a **Seeder** for each model.
-- Update **factories and seeders** when modifying model properties.
-- **Models should be final classes**.
+## Core Principles
+
+### Do's
+- **Design database-first** - Plan schema before coding
+- **Use migrations exclusively** - Version control for database
+- **Write database-agnostic code** - Support SQLite, MySQL, PostgreSQL
+- **Optimize queries** - Use indexes and eager loading
+- **Follow naming conventions** - Consistent table and column names
+
+### Don'ts
+- **Never modify database directly** - Always use migrations
+- **Avoid raw SQL** - Use Query Builder or Eloquent
+- **Don't use database-specific features** - Unless absolutely necessary
+- **Never store files in database** - Use file storage
+- **Don't skip foreign key constraints** - Maintain referential integrity
+
+## Migration Structure
+
+### Migration Creation Do's
+- **Use descriptive names** - Clear purpose in filename
+- **Follow timestamp format** - Laravel's default
+- **One concern per migration** - Don't mix unrelated changes
+- **Include rollback logic** - Always define down() method
+- **Add indexes strategically** - Foreign keys and query columns
+
+```php
+// ✅ Well-structured migration
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('projects', function (Blueprint $table) {
+            // Primary key
+            $table->id();
+            
+            // Descriptive columns with appropriate types
+            $table->string('name', 255);
+            $table->string('slug', 255)->unique();
+            $table->text('description')->nullable();
+            $table->string('status', 50)->default('draft');
+            $table->string('priority', 20)->default('medium');
+            
+            // Numeric columns with precision
+            $table->decimal('budget', 12, 2)->nullable();
+            $table->unsignedInteger('max_members')->default(10);
+            
+            // Date columns
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->timestamp('published_at')->nullable();
+            
+            // Foreign keys with constraints
+            $table->foreignId('owner_id')
+                  ->constrained('users')
+                  ->onDelete('cascade');
+            
+            $table->foreignId('category_id')
+                  ->nullable()
+                  ->constrained('categories')
+                  ->onDelete('set null');
+            
+            // JSON columns for flexible data
+            $table->json('settings')->nullable();
+            $table->json('metadata')->nullable();
+            
+            // Boolean flags
+            $table->boolean('is_featured')->default(false);
+            $table->boolean('is_public')->default(true);
+            
+            // Timestamps and soft deletes
+            $table->timestamps();
+            $table->softDeletes();
+            
+            // Indexes for performance
+            $table->index(['status', 'published_at']);
+            $table->index(['owner_id', 'created_at']);
+            $table->index('end_date');
+            $table->fullText(['name', 'description']);
+        });
+    }
+    
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('projects');
+    }
+};
+
+// ✅ Migration for pivot table
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('project_members', function (Blueprint $table) {
+            $table->id();
+            
+            $table->foreignId('project_id')
+                  ->constrained()
+                  ->onDelete('cascade');
+            
+            $table->foreignId('user_id')
+                  ->constrained()
+                  ->onDelete('cascade');
+            
+            $table->string('role', 50)->default('member');
+            $table->timestamp('joined_at')->useCurrent();
+            $table->boolean('is_active')->default(true);
+            $table->json('permissions')->nullable();
+            
+            $table->timestamps();
+            
+            // Composite unique index
+            $table->unique(['project_id', 'user_id']);
+            
+            // Additional indexes
+            $table->index(['user_id', 'is_active']);
+            $table->index('role');
+        });
+    }
+    
+    public function down(): void
+    {
+        Schema::dropIfExists('project_members');
+    }
+};
+
+// ✅ Migration modifying existing table
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            // Adding columns
+            $table->string('timezone', 50)
+                  ->default('UTC')
+                  ->after('email');
+            
+            $table->date('birth_date')
+                  ->nullable()
+                  ->after('timezone');
+            
+            // Adding index to existing column
+            $table->index('email_verified_at');
+            
+            // Adding composite index
+            $table->index(['created_at', 'status']);
+        });
+    }
+    
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            // Remove in reverse order
+            $table->dropIndex(['created_at', 'status']);
+            $table->dropIndex(['email_verified_at']);
+            
+            $table->dropColumn(['timezone', 'birth_date']);
+        });
+    }
+};
+```
+
+### Migration Creation Don'ts
+```php
+// ❌ Don't use vague names
+2024_01_01_000000_update_table.php // Which table?
+2024_01_01_000000_fix_stuff.php // What stuff?
+
+// ❌ Don't mix concerns
+public function up(): void
+{
+    // Creating multiple unrelated tables
+    Schema::create('users', function ($table) {});
+    Schema::create('products', function ($table) {});
+    Schema::create('orders', function ($table) {});
+}
+
+// ❌ Don't forget down() method
+public function down(): void
+{
+    // Empty - can't rollback!
+}
+
+// ❌ Don't use database-specific column types
+$table->enum('status', ['active', 'inactive']); // MySQL only
+$table->set('permissions', ['read', 'write']); // MySQL only
+
+// ❌ Don't skip foreign key constraints
+$table->unsignedBigInteger('user_id'); // No constraint
+```
+
+## Column Types and Naming
+
+### Column Types Do's
+- **Use appropriate types** - Match data requirements
+- **Set proper lengths** - Don't waste space
+- **Use nullable wisely** - Only when needed
+- **Default values** - Prevent null issues
+- **Consider database differences** - Test on all platforms
+
+```php
+// ✅ Proper column types
+Schema::create('products', function (Blueprint $table) {
+    // Strings with appropriate lengths
+    $table->string('sku', 50)->unique();
+    $table->string('name', 255);
+    $table->text('short_description'); // Under 65K
+    $table->longText('full_description'); // Over 65K
+    
+    // Numbers with precision
+    $table->decimal('price', 10, 2); // Up to 99999999.99
+    $table->decimal('weight', 8, 3); // Kilograms with grams
+    $table->integer('stock_quantity')->unsigned()->default(0);
+    $table->tinyInteger('rating')->unsigned()->nullable(); // 1-5
+    
+    // Dates and times
+    $table->date('release_date')->nullable();
+    $table->time('daily_deal_starts')->nullable();
+    $table->dateTime('sale_ends_at')->nullable();
+    $table->timestamp('last_restocked_at')->nullable();
+    $table->year('model_year')->nullable();
+    
+    // Binary data
+    $table->binary('small_file')->nullable(); // BLOB
+    $table->uuid('public_id')->unique();
+    
+    // JSON for flexible data (all databases support this now)
+    $table->json('specifications')->nullable();
+    $table->json('images')->nullable();
+    
+    // Booleans with defaults
+    $table->boolean('is_active')->default(true);
+    $table->boolean('is_downloadable')->default(false);
+});
+
+// ✅ Database-agnostic approach
+Schema::create('activities', function (Blueprint $table) {
+    // Use string instead of enum
+    $table->string('type', 50);
+    $table->string('status', 50);
+    
+    // Use JSON instead of database-specific types
+    $table->json('properties')->nullable();
+    
+    // IP addresses (compatible across databases)
+    $table->ipAddress('ip_address')->nullable();
+    
+    // Use morphs for polymorphic relations
+    $table->morphs('subject'); // Creates subject_type and subject_id
+    $table->morphs('causer');  // Creates causer_type and causer_id
+});
+```
+
+### Column Naming Don'ts
+```php
+// ❌ Inconsistent naming
+$table->string('userName'); // Should be snake_case
+$table->string('user-email'); // Don't use hyphens
+$table->string('DESC'); // Don't use reserved words
+
+// ❌ Wrong type choices
+$table->string('price'); // Should be decimal
+$table->integer('email'); // Should be string
+$table->boolean('status'); // Should be string for multiple states
+
+// ❌ Missing constraints
+$table->string('email'); // Should be unique
+$table->string('slug'); // Should be unique and indexed
+
+// ❌ Poor naming
+$table->string('data'); // Too generic
+$table->integer('number'); // What number?
+$table->boolean('flag'); // What flag?
+```
+
+## Indexes and Performance
+
+### Indexing Do's
+- **Index foreign keys** - Always
+- **Index columns in WHERE** - Frequently queried
+- **Use composite indexes** - For multi-column queries
+- **Consider unique indexes** - For constraints
+- **Monitor query performance** - Add indexes as needed
+
+```php
+// ✅ Strategic indexing
+Schema::create('posts', function (Blueprint $table) {
+    $table->id();
+    $table->string('title', 255);
+    $table->string('slug', 255)->unique(); // Unique index
+    $table->text('content');
+    $table->string('status', 50);
+    $table->timestamp('published_at')->nullable();
+    
+    $table->foreignId('user_id')->constrained();
+    $table->foreignId('category_id')->constrained();
+    
+    $table->timestamps();
+    
+    // Single column indexes
+    $table->index('status'); // WHERE status = ?
+    $table->index('published_at'); // ORDER BY published_at
+    $table->index('user_id'); // Foreign key index
+    
+    // Composite indexes (order matters!)
+    $table->index(['status', 'published_at']); // WHERE status = ? ORDER BY published_at
+    $table->index(['user_id', 'created_at']); // User's posts chronologically
+    
+    // Full-text search (MySQL/PostgreSQL)
+    $table->fullText(['title', 'content']);
+});
+
+// ✅ Adding indexes to existing tables
+Schema::table('orders', function (Blueprint $table) {
+    // Analyze slow queries and add appropriate indexes
+    $table->index(['customer_id', 'status', 'created_at']);
+    $table->index(['status', 'payment_status']);
+    $table->index('tracking_number');
+});
+
+// ✅ Unique composite index for business rules
+Schema::create('enrollments', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('student_id')->constrained();
+    $table->foreignId('course_id')->constrained();
+    $table->timestamp('enrolled_at');
+    
+    // Prevent duplicate enrollments
+    $table->unique(['student_id', 'course_id']);
+});
+```
+
+### Indexing Don'ts
+```php
+// ❌ Don't over-index
+Schema::create('users', function (Blueprint $table) {
+    $table->string('first_name')->index();
+    $table->string('last_name')->index();
+    $table->string('middle_name')->index(); // Rarely queried
+    $table->string('nickname')->index(); // Unnecessary
+});
+
+// ❌ Wrong composite index order
+$table->index(['created_at', 'user_id']); // Less selective column first
+
+// ❌ Indexing low-cardinality columns
+$table->boolean('is_active')->index(); // Only 2 values
+$table->string('gender', 10)->index(); // Few distinct values
+
+// ❌ Missing foreign key indexes
+$table->unsignedBigInteger('user_id'); // No index!
+```
+
+## Query Optimization
+
+### Query Optimization Do's
+- **Use Query Builder** - Over raw SQL
+- **Eager load relationships** - Prevent N+1 (see Models.mdc)
+- **Select only needed columns** - Reduce memory
+- **Use chunking** - For large datasets
+- **Cache query results** - When appropriate
+
+```php
+// ✅ Optimized query examples
+use Illuminate\Support\Facades\DB;
+
+// Query Builder for complex queries
+$topProducts = DB::table('products')
+    ->select('products.id', 'products.name', DB::raw('SUM(order_items.quantity) as total_sold'))
+    ->join('order_items', 'products.id', '=', 'order_items.product_id')
+    ->join('orders', 'order_items.order_id', '=', 'orders.id')
+    ->where('orders.status', 'completed')
+    ->whereBetween('orders.created_at', [now()->subMonth(), now()])
+    ->groupBy('products.id', 'products.name')
+    ->orderByDesc('total_sold')
+    ->limit(10)
+    ->get();
+
+// Using query builder with subqueries
+$usersWithRecentOrders = DB::table('users')
+    ->select('users.*')
+    ->whereExists(function ($query) {
+        $query->select(DB::raw(1))
+              ->from('orders')
+              ->whereColumn('orders.user_id', 'users.id')
+              ->where('orders.created_at', '>', now()->subDays(30));
+    })
+    ->get();
+
+// Chunking for memory efficiency
+DB::table('logs')
+    ->where('created_at', '<', now()->subMonths(6))
+    ->orderBy('id')
+    ->chunk(1000, function ($logs) {
+        foreach ($logs as $log) {
+            // Process each log
+            $this->archiveLog($log);
+        }
+    });
+
+// Using database transactions
+DB::transaction(function () {
+    DB::table('accounts')->where('id', 1)->update(['balance' => DB::raw('balance - 100')]);
+    DB::table('accounts')->where('id', 2)->update(['balance' => DB::raw('balance + 100')]);
+    
+    DB::table('transactions')->insert([
+        'from_account_id' => 1,
+        'to_account_id' => 2,
+        'amount' => 100,
+        'created_at' => now(),
+    ]);
+});
+
+// ✅ Raw queries when necessary (with bindings!)
+$monthlyRevenue = DB::select(
+    "SELECT 
+        DATE_FORMAT(created_at, '%Y-%m') as month,
+        SUM(total_amount) as revenue,
+        COUNT(*) as order_count
+     FROM orders
+     WHERE status = ?
+     AND created_at >= ?
+     GROUP BY month
+     ORDER BY month DESC",
+    ['completed', now()->subYear()]
+);
+```
+
+### Query Optimization Don'ts
+```php
+// ❌ Don't use raw SQL without bindings
+DB::select("SELECT * FROM users WHERE email = '$email'"); // SQL injection!
+
+// ❌ Don't load unnecessary data
+$users = DB::table('users')->get(); // Select specific columns
+
+// ❌ Don't perform operations in PHP that database can do
+$sum = DB::table('orders')->get()->sum('total'); // Use DB::table('orders')->sum('total')
+
+// ❌ Don't use cursor without need
+DB::table('users')->cursor(); // Use chunk() for better memory management
+
+// ❌ Don't forget to use transactions for related operations
+DB::table('accounts')->update(['balance' => $newBalance]);
+DB::table('logs')->insert([...]); // Should be in transaction
+```
+
+## Foreign Key Constraints
+
+### Foreign Keys Do's
+- **Always define constraints** - Data integrity
+- **Choose appropriate actions** - cascade, restrict, set null
+- **Name constraints clearly** - For debugging
+- **Consider soft deletes** - With restrictions
+- **Test constraint behavior** - In all scenarios
+
+```php
+// ✅ Proper foreign key constraints
+Schema::create('posts', function (Blueprint $table) {
+    $table->id();
+    
+    // Cascade delete - when user is deleted, delete their posts
+    $table->foreignId('user_id')
+          ->constrained()
+          ->onDelete('cascade')
+          ->onUpdate('cascade');
+    
+    // Set null - when category is deleted, posts remain but uncategorized
+    $table->foreignId('category_id')
+          ->nullable()
+          ->constrained()
+          ->onDelete('set null')
+          ->onUpdate('cascade');
+    
+    // Restrict - prevent deletion of user if they have posts
+    $table->foreignId('editor_id')
+          ->nullable()
+          ->constrained('users')
+          ->onDelete('restrict')
+          ->onUpdate('cascade');
+});
+
+// ✅ Named constraints for clarity
+Schema::create('order_items', function (Blueprint $table) {
+    $table->id();
+    
+    $table->foreignId('order_id')
+          ->constrained()
+          ->onDelete('cascade')
+          ->name('order_items_order_foreign');
+    
+    $table->foreignId('product_id')
+          ->constrained()
+          ->onDelete('restrict')
+          ->name('order_items_product_foreign');
+});
+
+// ✅ Handling soft deletes with foreign keys
+Schema::create('projects', function (Blueprint $table) {
+    $table->id();
+    
+    // For soft-deletable parent
+    $table->foreignId('company_id')
+          ->constrained()
+          ->onDelete('cascade'); // Soft delete will handle this
+    
+    $table->softDeletes();
+});
+
+// ✅ Circular reference handling
+Schema::create('employees', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->foreignId('manager_id')->nullable();
+});
+
+// Add constraint after table creation
+Schema::table('employees', function (Blueprint $table) {
+    $table->foreign('manager_id')
+          ->references('id')
+          ->on('employees')
+          ->onDelete('set null');
+});
+```
+
+### Foreign Keys Don'ts
+```php
+// ❌ Don't skip constraints
+$table->unsignedBigInteger('user_id'); // No constraint!
+
+// ❌ Don't use cascade everywhere
+$table->foreignId('user_id')
+      ->constrained()
+      ->onDelete('cascade'); // Dangerous for important data
+
+// ❌ Don't mismatch types
+$table->integer('user_id'); // Users.id is bigInteger!
+
+// ❌ Don't forget nullable with set null
+$table->foreignId('category_id') // Not nullable!
+      ->constrained()
+      ->onDelete('set null'); // Will fail
+
+// ❌ Don't create impossible constraints
+$table->foreignId('parent_id')
+      ->constrained('same_table') // Table doesn't exist yet
+```
+
+## Database Transactions
+
+### Transactions Do's
+- **Use for related operations** - All or nothing
+- **Keep transactions short** - Minimize lock time
+- **Handle deadlocks** - Retry logic
+- **Use appropriate isolation** - Based on needs
+- **Test rollback scenarios** - Ensure data consistency
+
+```php
+// ✅ Proper transaction usage
+use Illuminate\Support\Facades\DB;
+
+class OrderService
+{
+    public function createOrder(array $data): Order
+    {
+        return DB::transaction(function () use ($data) {
+            // Create order
+            $order = Order::create([
+                'user_id' => auth()->id(),
+                'status' => OrderStatus::PENDING,
+                'total_amount' => 0,
+            ]);
+            
+            $totalAmount = 0;
+            
+            // Add order items
+            foreach ($data['items'] as $item) {
+                $product = Product::lockForUpdate()->find($item['product_id']);
+                
+                if ($product->stock < $item['quantity']) {
+                    throw new InsufficientStockException($product);
+                }
+                
+                $orderItem = $order->items()->create([
+                    'product_id' => $product->id,
+                    'quantity' => $item['quantity'],
+                    'price' => $product->price,
+                ]);
+                
+                $totalAmount += $orderItem->price * $orderItem->quantity;
+                
+                // Update stock
+                $product->decrement('stock', $item['quantity']);
+            }
+            
+            // Update order total
+            $order->update(['total_amount' => $totalAmount]);
+            
+            // Create payment record
+            $order->payment()->create([
+                'amount' => $totalAmount,
+                'status' => PaymentStatus::PENDING,
+            ]);
+            
+            return $order;
+        });
+    }
+}
+
+// ✅ Transaction with retry logic
+public function transferFunds(Account $from, Account $to, float $amount): void
+{
+    $attempts = 0;
+    $maxAttempts = 3;
+    
+    while ($attempts < $maxAttempts) {
+        try {
+            DB::transaction(function () use ($from, $to, $amount) {
+                $from->lockForUpdate();
+                $to->lockForUpdate();
+                
+                if ($from->balance < $amount) {
+                    throw new InsufficientFundsException();
+                }
+                
+                $from->decrement('balance', $amount);
+                $to->increment('balance', $amount);
+                
+                Transaction::create([
+                    'from_account_id' => $from->id,
+                    'to_account_id' => $to->id,
+                    'amount' => $amount,
+                    'completed_at' => now(),
+                ]);
+            }, 5); // 5 attempts for deadlocks
+            
+            break; // Success
+            
+        } catch (\Illuminate\Database\DeadlockException $e) {
+            $attempts++;
+            if ($attempts >= $maxAttempts) {
+                throw $e;
+            }
+            usleep(100000 * $attempts); // Exponential backoff
+        }
+    }
+}
+
+// ✅ Manual transaction control
+DB::beginTransaction();
+
+try {
+    // Perform operations
+    $this->processStep1();
+    $this->processStep2();
+    
+    DB::commit();
+} catch (\Exception $e) {
+    DB::rollBack();
+    throw $e;
+}
+```
+
+### Transactions Don'ts
+```php
+// ❌ Don't use transactions for single operations
+DB::transaction(function () {
+    User::create($data); // Single operation doesn't need transaction
+});
+
+// ❌ Don't perform external operations in transactions
+DB::transaction(function () use ($user) {
+    $user->save();
+    
+    Mail::to($user)->send(new WelcomeEmail()); // External service!
+    $this->callWebhook($user); // API call!
+});
+
+// ❌ Don't use long-running transactions
+DB::transaction(function () {
+    foreach ($millionRecords as $record) {
+        $this->slowProcess($record); // Locks for too long
+    }
+});
+
+// ❌ Don't nest transactions incorrectly
+DB::transaction(function () {
+    DB::transaction(function () {
+        // Laravel handles this, but be aware of savepoint behavior
+    });
+});
+```
+
+## Seeders and Factories
+
+### Seeders Do's
+- **Create focused seeders** - One per model/concern
+- **Use factories** - Don't hardcode data (see Models.mdc)
+- **Make idempotent** - Can run multiple times
+- **Order matters** - Run dependent seeders first
+- **Environment aware** - Different data for dev/staging
+
+```php
+// ✅ Well-structured seeder
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Role;
+use App\Models\Permission;
+use Illuminate\Database\Seeder;
+
+class RoleSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $roles = [
+            [
+                'name' => 'admin',
+                'display_name' => 'Administrator',
+                'permissions' => ['manage-users', 'manage-content', 'view-reports'],
+            ],
+            [
+                'name' => 'editor',
+                'display_name' => 'Editor',
+                'permissions' => ['manage-content', 'view-reports'],
+            ],
+            [
+                'name' => 'viewer',
+                'display_name' => 'Viewer',
+                'permissions' => ['view-reports'],
+            ],
+        ];
+        
+        foreach ($roles as $roleData) {
+            $role = Role::firstOrCreate(
+                ['name' => $roleData['name']],
+                ['display_name' => $roleData['display_name']]
+            );
+            
+            // Sync permissions
+            $permissions = Permission::whereIn('name', $roleData['permissions'])->get();
+            $role->permissions()->sync($permissions);
+        }
+    }
+}
+
+// ✅ Environment-aware seeder
+class UserSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // Always create admin user
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin User',
+                'password' => bcrypt('password'),
+                'role' => 'admin',
+            ]
+        );
+        
+        // Only create test data in non-production
+        if (app()->environment(['local', 'staging'])) {
+            User::factory()
+                ->count(50)
+                ->has(Post::factory()->count(3))
+                ->create();
+        }
+    }
+}
+
+// ✅ DatabaseSeeder orchestration
+class DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // Order matters - dependencies first
+        $this->call([
+            PermissionSeeder::class,
+            RoleSeeder::class,
+            UserSeeder::class,
+            CategorySeeder::class,
+            TagSeeder::class,
+        ]);
+        
+        // Only in development
+        if (app()->environment('local')) {
+            $this->call([
+                ProjectSeeder::class,
+                TaskSeeder::class,
+                CommentSeeder::class,
+            ]);
+        }
+    }
+}
+```
+
+### Seeders Don'ts
+```php
+// ❌ Don't hardcode test data
+public function run()
+{
+    User::create([
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
+        'password' => 'password123', // Not hashed!
+    ]);
+}
+
+// ❌ Don't create duplicates
+public function run()
+{
+    // This creates duplicates on each run
+    Role::create(['name' => 'admin']);
+    Role::create(['name' => 'user']);
+}
+
+// ❌ Don't use in production
+public function run()
+{
+    // No environment check!
+    User::factory()->count(1000)->create();
+}
+
+// ❌ Don't ignore relationships
+public function run()
+{
+    Post::factory()->create([
+        'user_id' => 999, // User might not exist!
+    ]);
+}
+```
+
+## Database Configuration
+
+### Configuration Do's
+- **Use environment variables** - For connections
+- **Configure for all environments** - Dev, staging, prod
+- **Set appropriate timeouts** - Prevent hanging
+- **Use read/write splitting** - When needed
+- **Enable query logging** - In development only
+
+```php
+// ✅ config/database.php configuration
+return [
+    'default' => env('DB_CONNECTION', 'mysql'),
+    
+    'connections' => [
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'url' => env('DATABASE_URL'),
+            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'prefix' => env('DB_PREFIX', ''),
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
+        
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'forge'),
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => env('DB_PREFIX', ''),
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::ATTR_TIMEOUT => 5,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            ]) : [],
+        ],
+        
+        'pgsql' => [
+            'driver' => 'pgsql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'forge'),
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => env('DB_PREFIX', ''),
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+            'options' => array_filter([
+                PDO::ATTR_TIMEOUT => 5,
+            ]),
+        ],
+    ],
+    
+    // Migration configuration
+    'migrations' => 'migrations',
+    
+    // Redis configuration for caching/sessions
+    'redis' => [
+        'client' => env('REDIS_CLIENT', 'phpredis'),
+        'default' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', 6379),
+            'database' => env('REDIS_DB', 0),
+        ],
+    ],
+];
+
+// ✅ Multiple database connections
+class ReportService
+{
+    public function getAnalytics()
+    {
+        // Use read replica for heavy queries
+        return DB::connection('mysql-read')
+            ->table('analytics')
+            ->where('created_at', '>', now()->subDays(30))
+            ->get();
+    }
+    
+    public function writeLog($data)
+    {
+        // Use separate database for logs
+        return DB::connection('logs')
+            ->table('activity_logs')
+            ->insert($data);
+    }
+}
+```
+
+### Configuration Don'ts
+```php
+// ❌ Don't hardcode credentials
+'password' => 'secret123', // Use env()
+
+// ❌ Don't use same config for all environments
+'strict' => false, // Should be true in production
+
+// ❌ Don't enable query log in production
+DB::enableQueryLog(); // Memory leak
+
+// ❌ Don't ignore connection errors
+'options' => [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT, // Hide errors
+];
+```
+
+## Testing Database
+
+### Database Testing Do's
+- **Use RefreshDatabase trait** - Clean state
+- **Test migrations** - Both up and down
+- **Use factories** - Don't hardcode test data
+- **Test constraints** - Foreign keys, unique
+- **Use transactions** - For faster tests
+
+```php
+// ✅ Testing migrations
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+class MigrationTest extends TestCase
+{
+    use RefreshDatabase;
+    
+    public function test_projects_table_is_created_correctly()
+    {
+        $this->assertDatabaseHas('migrations', [
+            'migration' => '2024_01_01_000000_create_projects_table',
+        ]);
+        
+        Schema::hasTable('projects');
+        Schema::hasColumns('projects', [
+            'id', 'name', 'slug', 'owner_id', 'created_at',
+        ]);
+    }
+    
+    public function test_foreign_key_constraints_work()
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->create(['owner_id' => $user->id]);
+        
+        // Test cascade delete
+        $user->delete();
+        
+        $this->assertDatabaseMissing('projects', ['id' => $project->id]);
+    }
+}
+
+// ✅ Testing database transactions
+class OrderServiceTest extends TestCase
+{
+    use RefreshDatabase;
+    
+    public function test_order_creation_is_transactional()
+    {
+        $product = Product::factory()->create(['stock' => 5]);
+        
+        try {
+            $this->orderService->createOrder([
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 10], // Not enough stock
+                ],
+            ]);
+        } catch (InsufficientStockException $e) {
+            // Transaction should rollback
+        }
+        
+        // Stock should remain unchanged
+        $this->assertEquals(5, $product->fresh()->stock);
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('order_items', 0);
+    }
+}
+```
+
+## Common Pitfalls to Avoid
+
+1. **Modifying database directly** - Always use migrations
+2. **Using database-specific features** - Keep it portable
+3. **Skipping foreign keys** - Maintain referential integrity
+4. **No indexes on foreign keys** - Performance issues
+5. **Raw SQL without bindings** - SQL injection risk
+6. **Loading all records** - Use pagination/chunking
+7. **Long transactions** - Causes locks
+8. **No rollback in migrations** - Can't undo changes
+9. **Hardcoding in seeders** - Use factories (see Models.mdc)
+10. **Missing query optimization** - Profile and add indexes

@@ -1,32 +1,511 @@
 ---
-description: Form handling patterns with Inertia and DTOs
-globs: ["**/resources/js/**/*.vue", "**/resources/js/**/*.ts"]
-alwaysApply: false
+description: Form handling patterns with Inertia and DTOs - comprehensive rules and patterns
+globs: ["**/resources/js/**/*.vue", "**/resources/js/**/*.ts", "**/app/Data/**/*.php"]
+alwaysApply: true
 ---
-## Forms
-- Expect a **form prop** to be available in components handling forms:
-```ts
-const props = defineProps<{ resource: App.Data.ResourceData }>();
+
+# Form Handling with Inertia and DTOs Rules and Best Practices
+
+## Core Principles
+
+### Do's
+- **Always use DTOs from backend** - Forms are initialized with backend data
+- **Use generated types** - Leverage TypeScript types from generated.d.ts
+- **Use form.submit() exclusively** - Wayfinder embeds HTTP method in routes
+- **Preserve template structure** - Only modify form logic unless instructed
+- **Handle validation errors** - Display backend validation errors properly
+
+### Don'ts
+- **Never create empty forms** - Always initialize from props
+- **Don't manually define interfaces** - Use generated types
+- **Avoid form.post/patch/delete** - Always use form.submit()
+- **Don't specify HTTP method** - Wayfinder routes include the method
+- **Don't modify layouts** - Keep original structure intact
+- **Never hardcode form structure** - Trust backend DTOs
+
+## Form Prop Patterns
+
+### Form Props Do's
+- **Expect resource prop** - Backend provides initial data
+- **Use consistent naming** - Follow DTO naming conventions
+- **Type props correctly** - Use App.Data namespace
+- **Handle nested data** - DTOs may contain relationships
+
+```typescript
+// ✅ Correct prop definition with DTO
+const props = defineProps<{
+  resource: App.Data.UserData
+}>()
+
+// ✅ Multiple resources
+const props = defineProps<{
+  user: App.Data.UserData
+  roles: App.Data.RoleData[]
+  permissions: App.Data.PermissionData[]
+}>()
+
+// ✅ Nested resource with relationships
+const props = defineProps<{
+  project: App.Data.ProjectData & {
+    team: App.Data.TeamData
+    tasks: App.Data.TaskData[]
+  }
+}>()
+
+// ✅ Form-specific DTOs
+const props = defineProps<{
+  form: App.Data.CreateUserData
+  countries: App.Data.CountryData[]
+}>()
 ```
-- The `resource` object contains the initial form structure.
-- Instantiate the form with:
-```ts
-const form = useForm(props.resource);
+
+### Form Props Don'ts
+```typescript
+// ❌ Don't manually define interfaces
+interface UserForm {
+  name: string
+  email: string
+}
+const props = defineProps<{ form: UserForm }>()
+
+// ❌ Don't use generic types
+const props = defineProps<{ resource: Record<string, any> }>()
+
+// ❌ Don't forget typing
+const props = defineProps({
+  resource: Object // No TypeScript types
+})
+
+// ❌ Don't use wrong namespace
+const props = defineProps<{ 
+  user: UserData // Should be App.Data.UserData
+}>()
 ```
 
-## Form Props and Types
-- Always use types from `resources/js/types/generated.d.ts` for form props.
-- Define props using the generated type, e.g., `form: App.Data.ResourceData`.
-- **Never manually define interfaces** for form data.
+## Form Initialization
 
-## Form Handling
-- Use `useForm(props.form)` **directly**.
-- Do **not** create an empty form object manually.
-- Expect the form prop to contain initial backend values.
-- Use `useForm` from Inertia for form handling
-- Always use `form.submit()` method, not HTTP-specific methods
+### Initialization Do's
+- **Use useForm with props** - Initialize directly from backend data
+- **Preserve all fields** - Don't filter or modify DTO structure
+- **Handle null/undefined** - Account for optional fields
+- **Keep reactive** - Form maintains reactivity
 
-## Template Structure
-- Keep the **original template structure** unless explicitly instructed otherwise.
-- Do **not** modify styling or layout without approval.
-- Focus strictly on **form-related changes** when updating form handling.
+```typescript
+// ✅ Standard form initialization
+const form = useForm(props.resource)
+
+// ✅ With default values for optional fields
+const form = useForm({
+  ...props.resource,
+  tags: props.resource.tags ?? [],
+  metadata: props.resource.metadata ?? {}
+})
+
+// ✅ Complex nested form
+const form = useForm({
+  ...props.project,
+  team_members: props.project.team.members.map(m => m.id),
+  start_date: props.project.start_date ?? new Date().toISOString()
+})
+
+// ✅ Multi-step form initialization
+const form = useForm({
+  step1: props.resource.personal_info,
+  step2: props.resource.contact_info,
+  step3: props.resource.preferences
+})
+```
+
+### Initialization Don'ts
+```typescript
+// ❌ Never create empty forms
+const form = useForm({
+  name: '',
+  email: '',
+  password: ''
+})
+
+// ❌ Don't destructure and lose reactivity
+const { name, email } = props.resource
+const form = useForm({ name, email })
+
+// ❌ Don't modify DTO structure
+const form = useForm({
+  // Renaming fields breaks backend compatibility
+  userName: props.resource.name,
+  userEmail: props.resource.email
+})
+
+// ❌ Don't filter fields
+const form = useForm({
+  name: props.resource.name,
+  email: props.resource.email
+  // Missing other DTO fields
+})
+```
+
+## Form Submission
+
+### Submission Do's
+- **Always use form.submit()** - Consistent with Laravel Precognition
+- **Use Controllers object** - Wayfinder includes HTTP method in route type
+- **Handle success/error** - Provide user feedback
+- **Reset when appropriate** - Clear form after success
+- **Preserve state when needed** - For partial page updates
+
+```typescript
+// ✅ Create submission - method is embedded in store()
+const createUser = () => {
+  form.submit(Controllers.UserController.store(), {
+    onSuccess: () => {
+      form.reset()
+      toast.success('User created successfully')
+    },
+    onError: () => {
+      toast.error('Please check the form errors')
+    }
+  })
+}
+
+// ✅ Update submission - method is embedded in update()
+const updateProject = () => {
+  form.submit(Controllers.ProjectController.update({
+    project: props.project.id
+  }), {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('Project updated')
+    }
+  })
+}
+
+// ✅ Delete with confirmation - method is embedded in destroy()
+const deleteResource = () => {
+  if (!confirm('Are you sure?')) return
+  
+  form.submit(Controllers.ResourceController.destroy({
+    resource: props.resource.id
+  }), {
+    onSuccess: () => {
+      toast.success('Resource deleted')
+    }
+  })
+}
+
+// ✅ With additional headers
+const submitWithHeaders = () => {
+  form.submit(Controllers.ApiController.process(), {
+    headers: {
+      'X-Custom-Header': 'value'
+    },
+    onFinish: () => {
+      form.processing = false
+    }
+  })
+}
+```
+
+### Submission Don'ts
+```typescript
+// ❌ Never use HTTP-specific methods
+form.post(url)
+form.patch(url)
+form.put(url)
+form.delete(url)
+
+// ❌ Don't specify method separately with Wayfinder
+form.submit('post', Controllers.UserController.store()) // Method already in route
+
+// ❌ Don't construct URLs manually
+form.submit('/api/users')
+
+// ❌ Don't forget error handling
+form.submit(Controllers.UserController.store()) // No callbacks
+
+// ❌ Don't use axios for forms
+axios.post('/users', form.data())
+```
+
+## Validation Error Handling
+
+### Error Display Do's
+- **Show field-specific errors** - Use form.errors object
+- **Display general errors** - Handle non-field errors
+- **Style error states** - Visual feedback for invalid fields
+- **Clear errors on input** - Remove on user interaction
+
+```typescript
+// ✅ Field error display
+<template>
+  <div>
+    <label for="email" class="block text-sm font-medium">
+      Email Address
+    </label>
+    <input
+      id="email"
+      v-model="form.email"
+      type="email"
+      class="mt-1 block w-full"
+      :class="{ 'border-red-500': form.errors.email }"
+      @input="form.clearErrors('email')"
+    >
+    <p v-if="form.errors.email" class="mt-1 text-sm text-red-600">
+      {{ form.errors.email }}
+    </p>
+  </div>
+</template>
+
+// ✅ Multiple errors per field
+<div v-if="form.errors.password" class="mt-1">
+  <p v-for="error in form.errors.password" :key="error" class="text-sm text-red-600">
+    {{ error }}
+  </p>
+</div>
+
+// ✅ Summary of all errors
+<div v-if="form.hasErrors" class="mb-4 p-4 bg-red-50 rounded-md">
+  <h3 class="text-sm font-medium text-red-800">
+    Please correct the following errors:
+  </h3>
+  <ul class="mt-2 list-disc list-inside text-sm text-red-700">
+    <li v-for="(error, field) in form.errors" :key="field">
+      {{ field }}: {{ Array.isArray(error) ? error[0] : error }}
+    </li>
+  </ul>
+</div>
+
+// ✅ Dynamic error checking
+const hasEmailError = computed(() => !!form.errors.email)
+const isFormValid = computed(() => !form.hasErrors && form.isDirty)
+```
+
+### Error Display Don'ts
+```typescript
+// ❌ Don't ignore errors
+<input v-model="form.email"> // No error display
+
+// ❌ Don't hardcode error messages
+<p v-if="form.errors.email">Invalid email address</p> // Use backend message
+
+// ❌ Don't forget to clear errors
+<input v-model="form.email"> // Errors persist
+
+// ❌ Don't display raw error object
+{{ form.errors }} // Not user-friendly
+
+// ❌ Don't mix validation libraries
+// Use backend validation, not frontend libraries
+```
+
+## Form State Management
+
+### State Management Do's
+- **Use form helper properties** - processing, isDirty, hasErrors
+- **Show loading states** - During submission
+- **Disable during processing** - Prevent double submission
+- **Track form changes** - Use isDirty for unsaved changes
+
+```typescript
+// ✅ Loading button state
+<button
+  type="submit"
+  :disabled="form.processing || !form.isDirty"
+  class="btn-primary"
+>
+  <span v-if="form.processing" class="flex items-center">
+    <svg class="animate-spin h-4 w-4 mr-2" />
+    Saving...
+  </span>
+  <span v-else>Save Changes</span>
+</button>
+
+// ✅ Unsaved changes warning
+onBeforeRouteLeave((to, from, next) => {
+  if (form.isDirty && !confirm('You have unsaved changes. Leave anyway?')) {
+    next(false)
+  } else {
+    next()
+  }
+})
+
+// ✅ Form progress tracking
+const formProgress = computed(() => {
+  const fields = ['name', 'email', 'phone', 'address']
+  const completed = fields.filter(field => form[field]).length
+  return (completed / fields.length) * 100
+})
+
+// ✅ Conditional form sections
+<div v-if="!form.processing">
+  <FormSection1 v-model="form" />
+  <FormSection2 v-if="form.showAdvanced" v-model="form" />
+</div>
+```
+
+### State Management Don'ts
+```typescript
+// ❌ Don't create custom loading states
+const isLoading = ref(false) // Use form.processing
+
+// ❌ Don't manually track dirty state
+const hasChanges = ref(false) // Use form.isDirty
+
+// ❌ Don't forget to disable during submission
+<button type="submit">Save</button> // Always disable when processing
+
+// ❌ Don't reset without user action
+watch(() => form.data(), () => {
+  form.reset() // Unexpected behavior
+})
+```
+
+## Complex Form Patterns
+
+### Complex Forms Do's
+- **Handle file uploads** - Use form.post for files
+- **Multi-step forms** - Preserve state between steps
+- **Dynamic fields** - Arrays and objects in forms
+- **Conditional validation** - Based on other fields
+
+```typescript
+// ✅ File upload handling
+const form = useForm({
+  ...props.resource,
+  avatar: null as File | null
+})
+
+const handleFileChange = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (file) {
+    form.avatar = file
+  }
+}
+
+// ✅ Dynamic field arrays
+const form = useForm({
+  ...props.resource,
+  contacts: props.resource.contacts || [{ name: '', email: '' }]
+})
+
+const addContact = () => {
+  form.contacts.push({ name: '', email: '' })
+}
+
+const removeContact = (index: number) => {
+  form.contacts.splice(index, 1)
+}
+
+// ✅ Dependent fields
+watch(() => form.country, (country) => {
+  if (country !== 'US') {
+    form.state = null
+  }
+})
+
+// ✅ Wizard form with steps
+const currentStep = ref(1)
+const form = useForm(props.resource)
+
+const nextStep = () => {
+  form.submit(Controllers.WizardController.validateStep({
+    step: currentStep.value
+  }), {
+    preserveState: true,
+    onSuccess: () => currentStep.value++
+  })
+}
+```
+
+### Complex Forms Don'ts
+```typescript
+// ❌ Don't lose file references
+form.data() // Files are lost in serialization
+
+// ❌ Don't mutate arrays directly
+form.items[0] = newItem // Use array methods
+
+// ❌ Don't create separate forms per step
+const step1Form = useForm({...})
+const step2Form = useForm({...}) // Use single form
+
+// ❌ Don't forget deep reactivity
+form.nested.deep.value = 'new' // May not trigger updates
+```
+
+## Template Structure Rules
+
+### Template Do's
+- **Preserve existing structure** - Don't reorganize without permission
+- **Keep original styling** - Maintain CSS classes
+- **Focus on form logic** - Only modify form-related code
+- **Respect component hierarchy** - Don't flatten or nest differently
+
+```vue
+<!-- ✅ Preserving original template -->
+<template>
+  <!-- Original structure maintained -->
+  <div class="existing-wrapper-class">
+    <form @submit.prevent="handleSubmit" class="original-form-class">
+      <!-- Only form logic updated -->
+      <input v-model="form.email" :class="originalClasses">
+      <!-- Rest of template unchanged -->
+    </form>
+  </div>
+</template>
+```
+
+### Template Don'ts
+```vue
+<!-- ❌ Don't restructure templates -->
+<!-- Original: nested divs -->
+<div><div><form>...</form></div></div>
+<!-- Changed to: flattened -->
+<form>...</form>
+
+<!-- ❌ Don't change styling -->
+<input class="mt-1 block w-full"> <!-- Original -->
+<input class="w-full p-2 border"> <!-- Modified -->
+
+<!-- ❌ Don't add wrapper elements -->
+<div class="my-new-wrapper"> <!-- Added -->
+  <!-- Original content -->
+</div>
+```
+
+## Testing Considerations
+
+### Testing Do's
+- **Test with real DTOs** - Use factory data matching DTOs
+- **Test validation errors** - Mock backend responses
+- **Test form states** - Processing, dirty, errors
+- **Test submit flow** - Success and error paths
+
+```typescript
+// ✅ Testing with proper DTO
+const mockResource: App.Data.UserData = {
+  id: 1,
+  name: 'Test User',
+  email: 'test@example.com',
+  created_at: '2024-01-01'
+}
+
+// ✅ Test form submission
+await wrapper.find('form').trigger('submit')
+expect(form.submit).toHaveBeenCalledWith(
+  Controllers.UserController.store(),
+  expect.any(Object)
+)
+```
+
+## Common Pitfalls to Avoid
+
+1. **Creating empty forms** - Always initialize from props
+2. **Using form.post/patch** - Always use form.submit()
+3. **Manually defining types** - Use generated DTOs
+4. **Modifying DTO structure** - Keep backend compatibility
+5. **Ignoring validation errors** - Always display them
+6. **Forgetting loading states** - Show form.processing
+7. **Changing templates** - Preserve original structure
+8. **Not handling errors** - Add success/error callbacks
+9. **Using axios for forms** - Use Inertia's form handling
+10. **Breaking reactivity** - Maintain Vue's reactive patterns

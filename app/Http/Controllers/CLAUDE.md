@@ -1,0 +1,1 @@
+This directory should only contain route controllers. See `/.cursor/rules/Backend/Controllers.mdc` for all rules related to controllers.

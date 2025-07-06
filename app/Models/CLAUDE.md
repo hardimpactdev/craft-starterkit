@@ -1,0 +1,1 @@
+This directory should only contain models. See `/.cursor/rules/Backend/Models.mdc` for all rules related to models.

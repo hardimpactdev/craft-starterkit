@@ -23,25 +23,34 @@ Before writing any code, review these rule files in order:
 
 #### For Backend Features:
 1. `backend/General.mdc` - Overall PHP/Laravel conventions
-2. `backend/Routes.mdc` - Waymaker routing patterns (NO manual routes!)
-3. `backend/Validation.mdc` - FormRequest and DTO patterns (NO inline validation!)
-4. `backend/Database.mdc` - Model and migration guidelines
-5. `backend/Testing.mdc` - Pest test requirements
+2. `backend/Controllers.mdc` - Controller structure and resourceful methods
+3. `backend/Routes.mdc` - Waymaker routing patterns (NO manual routes!)
+4. `backend/FormRequests.mdc` - Form validation patterns (NO inline validation!)
+5. `backend/DTOs.mdc` - Data Transfer Object patterns
+6. `backend/Models.mdc` - Model structure and relationships
+7. `backend/Database.mdc` - Migration and seeding guidelines
+8. `backend/Enums.mdc` - Enum usage for database values
+9. `backend/Middleware.mdc` - Middleware patterns and usage
+10. `backend/Testing.mdc` - Pest test requirements
 
 #### For Frontend Features:
 1. `frontend/Vue.mdc` - Component structure and patterns
-2. `frontend/LiftoffUI.mdc` - UI component library usage
-3. `frontend/AutoImports.mdc` - What NOT to import manually
-4. `frontend/Routing.mdc` - Using Controllers object for routes
-5. `frontend/Forms.mdc` - Form handling with DTOs
+2. `frontend/TypeScript.mdc` - TypeScript conventions and types
+3. `frontend/LiftoffUI.mdc` - UI component library usage
+4. `frontend/Tailwind.mdc` - Tailwind CSS patterns and utilities
+5. `frontend/AutoImports.mdc` - What NOT to import manually
+6. `frontend/Routing.mdc` - Using Controllers object for routes
+7. `frontend/Forms.mdc` - Form handling with DTOs
 
 ### Step 3: Key Rules to Remember
 
 #### Backend:
 - **Routes**: Use Waymaker attributes (`#[Get]`, `#[Post]`, etc.) - NEVER edit web.php
-- **Validation**: Always use FormRequest with DTOs - NEVER validate in controllers
+- **FormRequests**: Always use FormRequest with DTOs - NEVER validate in controllers
 - **Controllers**: Only use resourceful methods (index, show, create, store, edit, update, destroy)
 - **Models**: Must be final classes with factories and seeders
+- **Enums**: String values, like types, that are stored in the database must be Enums
+- **DTOs**: Instead of arrays apply DTOs where possible.
 - **Testing**: Every feature MUST include Pest tests
 
 #### Frontend:
@@ -94,3 +103,38 @@ This project prioritizes consistency over personal preferences. When in doubt:
 4. Test thoroughly before considering a feature complete
 
 The rules exist to maintain code quality and consistency across the entire team. Following them ensures smoother development and fewer conflicts.
+
+# Rule Management and Preference Capture
+
+## Overview
+You are responsible for maintaining consistency between user instructions and documented rules across this Laravel project. Rules are hierarchical: /.cursor/rules (global) > directory-specific CLAUDE.md files > session instructions. 
+
+## Core Responsibilities
+
+### 1. Rule Updates When Instructions Contradict
+When a user gives instructions that contradict existing rules:
+- Identify the specific rule being contradicted and its location
+- Ask: "This contradicts [specific rule] in [file path]. Should I update the rule file to reflect this new preference?"
+- If confirmed, update the appropriate rule file with clear comments marking the change
+- Example: User says "use snake_case for variables" when rules specify camelCase → Update rule file after confirmation
+
+### 2. Capture New Preferences
+When users express new preferences not covered by existing rules:
+- Recognize patterns after 2-3 consistent corrections
+- Propose rule additions: "I notice you prefer [pattern]. Should I add this to [appropriate rule file]?"
+- Suggest specific rule text before adding
+- Place rules in the most specific applicable location (directory > global) 
+
+### 3. Rule Application Hierarchy
+Apply rules with this precedence (highest to lowest):
+1. Explicit user override in current session
+2. Directory-specific CLAUDE.md (closest to current file)
+3. Global rules in /.cursor/rules
+4. Laravel framework conventions 
+
+## Implementation Guidelines
+
+- **File Updates**: When updating rules, preserve existing structure and use clear section headers
+- **Documentation**: Add comments explaining why rules were changed/added with date
+- **Validation**: Ensure rule changes don't create conflicts with other rules
+- **Scope**: Only update rules for coding patterns, not business logic or architecture decisions

@@ -1,0 +1,949 @@
+---
+description: Laravel 12 middleware patterns and best practices - comprehensive rules
+globs: ["**/app/Http/Middleware/**/*.php", "**/bootstrap/app.php"]
+alwaysApply: true
+---
+
+# Laravel Middleware Development Rules and Best Practices
+
+## Core Principles
+
+### Do's
+- **Use middleware for cross-cutting concerns** - Authentication, logging, etc.
+- **Keep middleware focused** - Single responsibility principle
+- **Register in bootstrap/app.php** - Modern Laravel approach
+- **Order middleware correctly** - Execution order matters
+- **Use terminate method** - For post-response tasks
+
+### Don'ts
+- **Don't put business logic** - Keep in controllers/services
+- **Avoid heavy processing** - Impacts every request
+- **Don't modify core middleware** - Extend instead
+- **Never store state** - Middleware should be stateless
+- **Don't skip the handle method** - Always call $next($request)
+
+## Creating Middleware
+
+### Middleware Creation Do's
+- **Use artisan command** - For consistent structure
+- **Implement handle method** - Core middleware logic
+- **Type hint properly** - Request and Closure types
+- **Return response** - Always return $next($request)
+- **Add PHPDoc** - Document purpose and usage
+
+```php
+// ✅ Well-structured middleware
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class EnsureUserIsActive
+{
+    /**
+     * Ensure the authenticated user account is active
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        if ($request->user() && !$request->user()->is_active) {
+            auth()->logout();
+            
+            return redirect()
+                ->route('login')
+                ->with('error', 'Your account has been deactivated.');
+        }
+        
+        return $next($request);
+    }
+}
+
+// ✅ Middleware with parameters
+class CheckRole
+{
+    public function handle(Request $request, Closure $next, string ...$roles): Response
+    {
+        if (!$request->user() || !$request->user()->hasAnyRole($roles)) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        return $next($request);
+    }
+}
+
+// ✅ API middleware with JSON responses
+class ValidateApiKey
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $apiKey = $request->header('X-API-Key');
+        
+        if (!$apiKey || !$this->isValidApiKey($apiKey)) {
+            return response()->json([
+                'error' => 'Invalid or missing API key',
+            ], 401);
+        }
+        
+        return $next($request);
+    }
+    
+    private function isValidApiKey(string $key): bool
+    {
+        return ApiKey::where('key', $key)
+            ->where('is_active', true)
+            ->exists();
+    }
+}
+
+// ✅ Middleware with terminate method
+class LogRequestDuration
+{
+    private float $startTime;
+    
+    public function handle(Request $request, Closure $next): Response
+    {
+        $this->startTime = microtime(true);
+        
+        return $next($request);
+    }
+    
+    public function terminate(Request $request, Response $response): void
+    {
+        $duration = microtime(true) - $this->startTime;
+        
+        Log::info('Request completed', [
+            'uri' => $request->getRequestUri(),
+            'method' => $request->method(),
+            'duration' => round($duration * 1000, 2) . 'ms',
+            'status' => $response->getStatusCode(),
+        ]);
+    }
+}
+
+// ✅ Modifying request/response
+class AddSecurityHeaders
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $response = $next($request);
+        
+        return $response
+            ->header('X-Content-Type-Options', 'nosniff')
+            ->header('X-Frame-Options', 'DENY')
+            ->header('X-XSS-Protection', '1; mode=block')
+            ->header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    }
+}
+```
+
+### Middleware Creation Don'ts
+```php
+// ❌ Don't forget type hints
+public function handle($request, $next) // Missing types
+{
+    return $next($request);
+}
+
+// ❌ Don't put business logic
+class BadMiddleware
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        // This should be in a service
+        $user = $request->user();
+        $subscription = $user->subscription;
+        $subscription->checkLimits();
+        $subscription->incrementUsage();
+        
+        return $next($request);
+    }
+}
+
+// ❌ Don't forget to call $next
+public function handle(Request $request, Closure $next): Response
+{
+    if ($someCondition) {
+        return redirect('/'); // Never calls $next($request)
+    }
+    // Missing return $next($request);
+}
+
+// ❌ Don't store state
+class StatefulMiddleware
+{
+    private static array $processedRequests = []; // Don't do this
+    
+    public function handle(Request $request, Closure $next): Response
+    {
+        self::$processedRequests[] = $request->url(); // Stateful!
+        return $next($request);
+    }
+}
+
+// ❌ Don't perform heavy operations
+public function handle(Request $request, Closure $next): Response
+{
+    // Don't do this in middleware
+    $this->generateComplexReport();
+    $this->processLargeDataset();
+    $this->sendMultipleApiRequests();
+    
+    return $next($request);
+}
+```
+
+## Registering Middleware
+
+### Registration Do's (Bootstrap/app.php)
+- **Use withMiddleware method** - Configure all middleware
+- **Organize by type** - Global, route, groups
+- **Use aliases** - For frequently used middleware
+- **Define groups** - For common combinations
+- **Order matters** - First registered, first executed
+
+```php
+// ✅ Proper middleware registration in bootstrap/app.php
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        // ✅ Global middleware (runs on every request)
+        $middleware->append([
+            \App\Http\Middleware\LogRequestDuration::class,
+            \App\Http\Middleware\AddSecurityHeaders::class,
+        ]);
+        
+        // ✅ Prepend to run before other middleware
+        $middleware->prepend([
+            \App\Http\Middleware\TrustProxies::class,
+        ]);
+        
+        // ✅ Web middleware group additions
+        $middleware->web(append: [
+            \App\Http\Middleware\EnsureUserIsActive::class,
+            \App\Http\Middleware\LocaleMiddleware::class,
+        ]);
+        
+        // ✅ API middleware group additions
+        $middleware->api(append: [
+            \App\Http\Middleware\ValidateApiKey::class,
+            \App\Http\Middleware\LogApiRequests::class,
+        ]);
+        
+        // ✅ Middleware aliases
+        $middleware->alias([
+            'role' => \App\Http\Middleware\CheckRole::class,
+            'subscription' => \App\Http\Middleware\CheckSubscription::class,
+            'verified.phone' => \App\Http\Middleware\EnsurePhoneIsVerified::class,
+            'throttle.api' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+        ]);
+        
+        // ✅ Custom middleware groups
+        $middleware->group('admin', [
+            'auth',
+            'verified',
+            'role:admin,super-admin',
+            \App\Http\Middleware\LogAdminActions::class,
+        ]);
+        
+        // ✅ Priority ordering
+        $middleware->priority([
+            \Illuminate\Foundation\Http\Middleware\HandleCors::class,
+            \App\Http\Middleware\TrustProxies::class,
+            \Illuminate\Http\Middleware\TrustHosts::class,
+            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \Illuminate\Auth\Middleware\Authorize::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        //
+    })->create();
+
+// ✅ Excluding routes from middleware
+return Application::configure(basePath: dirname(__DIR__))
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: [
+            'stripe/*',
+            'webhook/*',
+        ]);
+        
+        $middleware->validateSignatures(except: [
+            'unsubscribe/*',
+        ]);
+        
+        $middleware->convertEmptyStringsToNull(except: [
+            'password',
+            'password_confirmation',
+        ]);
+    });
+```
+
+### Registration Don'ts
+```php
+// ❌ Don't use old kernel approach
+// app/Http/Kernel.php - Don't use in Laravel 11+
+protected $middleware = [
+    \App\Http\Middleware\TrustProxies::class,
+];
+
+// ❌ Don't register in service providers
+public function boot()
+{
+    $router->pushMiddlewareToGroup('web', MyMiddleware::class); // Old way
+}
+
+// ❌ Don't forget to use the callback
+->withMiddleware() // Missing function (Middleware $middleware)
+
+// ❌ Don't mix append and prepend incorrectly
+$middleware->append(AuthMiddleware::class); // Auth should typically be later
+$middleware->prepend(SubstituteBindings::class); // Should be later
+
+// ❌ Don't create circular dependencies
+$middleware->group('auth', ['verified']);
+$middleware->group('verified', ['auth']); // Circular!
+```
+
+## Route Middleware
+
+### Route Middleware Do's
+- **Apply via controller attributes** - With Waymaker
+- **Use middleware aliases** - Cleaner syntax
+- **Pass parameters correctly** - Colon notation
+- **Group related middleware** - For consistency
+- **Document requirements** - In controller comments
+
+```php
+// ✅ Applying middleware in controllers
+use HardImpact\Waymaker\{Get, Post};
+
+class ProjectController extends Controller
+{
+    // Apply to entire controller
+    protected static array $middleware = ['auth', 'verified'];
+    
+    #[Get(middleware: ['throttle:10,1'])]
+    public function index(): Response
+    {
+        return Inertia::render('Projects/Index');
+    }
+    
+    #[Post(
+        parameters: ['project'],
+        middleware: ['role:admin,manager']
+    )]
+    public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
+    {
+        // Only admins and managers can update
+    }
+}
+
+// ✅ Conditional middleware
+class AccountController extends Controller
+{
+    #[Get(middleware: ['auth', 'password.confirm'])]
+    public function security(): Response
+    {
+        return Inertia::render('Account/Security');
+    }
+    
+    #[Delete(
+        middleware: ['auth', 'verified', 'password.confirm']
+    )]
+    public function destroy(): RedirectResponse
+    {
+        auth()->user()->delete();
+        return redirect()->route('home');
+    }
+}
+
+// ✅ API middleware
+class ApiController extends Controller
+{
+    protected static array $middleware = ['auth:sanctum', 'throttle:api'];
+    
+    #[Get(middleware: ['cache.headers:public;max_age=3600'])]
+    public function publicData(): JsonResponse
+    {
+        return response()->json(['data' => $this->getData()]);
+    }
+}
+
+// ✅ Multiple middleware parameters
+#[Post(middleware: [
+    'throttle:uploads',
+    'role:premium,enterprise',
+    'subscription:active'
+])]
+public function upload(Request $request): JsonResponse
+{
+    // Multiple middleware checks
+}
+```
+
+### Route Middleware Don'ts
+```php
+// ❌ Don't apply in routes file (use Waymaker)
+Route::middleware(['auth'])->group(function () {
+    // Don't define routes manually
+});
+
+// ❌ Don't forget middleware for sensitive routes
+#[Post(parameters: ['user'])] // Missing auth middleware!
+public function updatePassword(User $user)
+{
+    // Unprotected route
+}
+
+// ❌ Don't use wrong parameter syntax
+#[Get(middleware: ['role-admin'])] // Should be 'role:admin'
+#[Get(middleware: ['throttle:60:1'])] // Should be 'throttle:60,1'
+
+// ❌ Don't apply conflicting middleware
+#[Get(middleware: ['guest', 'auth'])] // Conflicting!
+
+// ❌ Don't hardcode middleware logic
+public function admin()
+{
+    if (!auth()->user()->isAdmin()) { // Use role middleware
+        abort(403);
+    }
+}
+```
+
+## Middleware Parameters
+
+### Middleware Parameters Do's
+- **Accept variadic parameters** - Flexible arguments
+- **Validate parameters** - Ensure correctness
+- **Use type declarations** - Where possible
+- **Document parameter usage** - In PHPDoc
+- **Provide defaults** - When appropriate
+
+```php
+// ✅ Single parameter middleware
+class CheckAge
+{
+    public function handle(Request $request, Closure $next, string $minAge): Response
+    {
+        if (!$request->user() || $request->user()->age < (int) $minAge) {
+            return redirect()->route('age-restriction');
+        }
+        
+        return $next($request);
+    }
+}
+// Usage: middleware: ['age:18']
+
+// ✅ Multiple parameters
+class RateLimiter
+{
+    public function handle(
+        Request $request, 
+        Closure $next, 
+        string $maxAttempts = '60',
+        string $decayMinutes = '1'
+    ): Response {
+        $key = $this->resolveRequestSignature($request);
+        
+        if (RateLimiter::tooManyAttempts($key, (int) $maxAttempts)) {
+            return response()->json([
+                'message' => 'Too many requests',
+            ], 429);
+        }
+        
+        RateLimiter::hit($key, (int) $decayMinutes * 60);
+        
+        return $next($request);
+    }
+}
+// Usage: middleware: ['rate_limit:100,5']
+
+// ✅ Variadic parameters
+class RequirePermission
+{
+    public function handle(Request $request, Closure $next, string ...$permissions): Response
+    {
+        foreach ($permissions as $permission) {
+            if (!$request->user()->can($permission)) {
+                abort(403, "Missing permission: {$permission}");
+            }
+        }
+        
+        return $next($request);
+    }
+}
+// Usage: middleware: ['permission:view-users,edit-users,delete-users']
+
+// ✅ Complex parameter parsing
+class CheckSubscriptionFeature
+{
+    public function handle(Request $request, Closure $next, string $feature): Response
+    {
+        $user = $request->user();
+        
+        if (!$user || !$user->subscription) {
+            return redirect()->route('pricing');
+        }
+        
+        $featureConfig = config("subscription.features.{$feature}");
+        
+        if (!$user->subscription->hasFeature($feature)) {
+            return redirect()
+                ->route('pricing')
+                ->with('error', "Upgrade to access {$featureConfig['name']}");
+        }
+        
+        return $next($request);
+    }
+}
+// Usage: middleware: ['feature:advanced-analytics']
+```
+
+### Middleware Parameters Don'ts
+```php
+// ❌ Don't use arrays as parameters
+public function handle($request, $next, array $roles) // Can't pass arrays
+{
+    // Won't work with route middleware
+}
+
+// ❌ Don't forget parameter validation
+public function handle($request, $next, $age)
+{
+    if ($request->user()->age < $age) { // $age might not be numeric
+        // ...
+    }
+}
+
+// ❌ Don't use complex objects
+public function handle($request, $next, User $user) // Can't instantiate
+{
+    // Parameters are strings
+}
+
+// ❌ Don't parse parameters incorrectly
+public function handle($request, $next, $params)
+{
+    [$limit, $time] = explode(',', $params); // What if no comma?
+}
+```
+
+## Middleware Groups
+
+### Middleware Groups Do's
+- **Create logical groups** - Related middleware together
+- **Use for common combinations** - DRY principle
+- **Name groups clearly** - Self-documenting
+- **Apply consistently** - Across similar routes
+- **Document group purpose** - In bootstrap/app.php
+
+```php
+// ✅ Defining middleware groups
+->withMiddleware(function (Middleware $middleware) {
+    // Admin area group
+    $middleware->group('admin', [
+        'auth',
+        'verified',
+        'role:admin,super-admin',
+        \App\Http\Middleware\LogAdminActions::class,
+        \App\Http\Middleware\CheckAdminIpWhitelist::class,
+    ]);
+    
+    // API client group
+    $middleware->group('api.client', [
+        'auth:sanctum',
+        'throttle:api',
+        \App\Http\Middleware\ValidateApiVersion::class,
+        \App\Http\Middleware\LogApiRequests::class,
+    ]);
+    
+    // Subscription features
+    $middleware->group('subscription.premium', [
+        'auth',
+        'subscription:active',
+        'feature:premium',
+    ]);
+    
+    // Public API group
+    $middleware->group('api.public', [
+        \App\Http\Middleware\ValidateApiKey::class,
+        'throttle:public-api',
+        \App\Http\Middleware\CacheApiResponses::class,
+    ]);
+})
+
+// ✅ Using groups in controllers
+class AdminController extends Controller
+{
+    protected static array $middleware = ['admin'];
+    
+    #[Get]
+    public function dashboard(): Response
+    {
+        // All admin middleware applied
+    }
+}
+
+class PremiumFeatureController extends Controller
+{
+    protected static array $middleware = ['subscription.premium'];
+    
+    #[Get]
+    public function advancedAnalytics(): Response
+    {
+        // Only accessible to premium subscribers
+    }
+}
+
+// ✅ Combining groups with additional middleware
+#[Post(middleware: ['admin', 'password.confirm'])]
+public function deleteAllUsers(): RedirectResponse
+{
+    // Extra sensitive action
+}
+```
+
+### Middleware Groups Don'ts
+```php
+// ❌ Don't create overlapping groups
+$middleware->group('authenticated', ['auth']);
+$middleware->group('verified', ['auth', 'verified']); // Redundant auth
+
+// ❌ Don't use unclear names
+$middleware->group('group1', [...]);
+$middleware->group('stuff', [...]);
+
+// ❌ Don't make groups too large
+$middleware->group('everything', [
+    'auth',
+    'verified',
+    'throttle',
+    'role:admin',
+    'subscription',
+    // 20 more middleware...
+]);
+
+// ❌ Don't nest groups
+$middleware->group('nested', ['admin', 'api.client']); // Avoid
+```
+
+## Error Handling in Middleware
+
+### Error Handling Do's
+- **Return appropriate responses** - Based on request type
+- **Use proper HTTP status codes** - 401, 403, etc.
+- **Provide helpful messages** - For debugging
+- **Log when necessary** - Security events
+- **Handle exceptions gracefully** - Don't expose internals
+
+```php
+// ✅ Proper error responses
+class AuthenticateApi
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (!$request->bearerToken()) {
+            return response()->json([
+                'error' => 'Unauthenticated',
+                'message' => 'Bearer token required',
+            ], 401);
+        }
+        
+        try {
+            $user = $this->validateToken($request->bearerToken());
+            $request->setUserResolver(fn () => $user);
+        } catch (InvalidTokenException $e) {
+            Log::warning('Invalid API token attempt', [
+                'ip' => $request->ip(),
+                'token_prefix' => substr($request->bearerToken(), 0, 8),
+            ]);
+            
+            return response()->json([
+                'error' => 'Invalid token',
+                'message' => 'The provided token is invalid or expired',
+            ], 401);
+        }
+        
+        return $next($request);
+    }
+}
+
+// ✅ Different responses for web/API
+class RequireSubscription
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (!$request->user()->hasActiveSubscription()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'error' => 'Subscription required',
+                    'message' => 'This feature requires an active subscription',
+                    'upgrade_url' => route('pricing'),
+                ], 402);
+            }
+            
+            return redirect()
+                ->route('pricing')
+                ->with('error', 'Please upgrade to access this feature.');
+        }
+        
+        return $next($request);
+    }
+}
+
+// ✅ Graceful degradation
+class OptionalFeature
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        try {
+            if ($this->featureService->isEnabled('new_feature')) {
+                $request->attributes->set('feature_enabled', true);
+            }
+        } catch (\Exception $e) {
+            // Log but don't fail the request
+            Log::error('Feature flag check failed', [
+                'feature' => 'new_feature',
+                'error' => $e->getMessage(),
+            ]);
+        }
+        
+        return $next($request);
+    }
+}
+```
+
+### Error Handling Don'ts
+```php
+// ❌ Don't expose internal errors
+public function handle($request, $next)
+{
+    throw new \Exception('Database connection failed at 192.168.1.1');
+}
+
+// ❌ Don't use wrong status codes
+return response('Unauthorized', 200); // Should be 401
+
+// ❌ Don't forget JSON responses for APIs
+if (!$authorized) {
+    return redirect('/login'); // API should return JSON
+}
+
+// ❌ Don't abort without context
+abort(403); // No helpful message
+
+// ❌ Don't log sensitive data
+Log::info('Failed login', [
+    'password' => $request->password, // Never log passwords!
+]);
+```
+
+## Testing Middleware
+
+### Testing Do's
+- **Test in isolation** - Unit test middleware
+- **Test integration** - With actual routes
+- **Test parameters** - Various configurations
+- **Test error cases** - Unauthorized, etc.
+- **Mock dependencies** - For unit tests
+
+```php
+// ✅ Unit testing middleware
+use App\Http\Middleware\CheckAge;
+
+class CheckAgeMiddlewareTest extends TestCase
+{
+    public function test_allows_users_above_minimum_age()
+    {
+        $middleware = new CheckAge();
+        
+        $request = Request::create('/restricted', 'GET');
+        $user = User::factory()->make(['age' => 21]);
+        $request->setUserResolver(fn () => $user);
+        
+        $response = $middleware->handle($request, function ($req) {
+            return response('Success');
+        }, '18');
+        
+        $this->assertEquals('Success', $response->getContent());
+    }
+    
+    public function test_redirects_users_below_minimum_age()
+    {
+        $middleware = new CheckAge();
+        
+        $request = Request::create('/restricted', 'GET');
+        $user = User::factory()->make(['age' => 16]);
+        $request->setUserResolver(fn () => $user);
+        
+        $response = $middleware->handle($request, function ($req) {
+            return response('Success');
+        }, '18');
+        
+        $this->assertEquals(302, $response->getStatusCode());
+        $this->assertEquals(route('age-restriction'), $response->headers->get('Location'));
+    }
+}
+
+// ✅ Integration testing
+class MiddlewareIntegrationTest extends TestCase
+{
+    public function test_admin_routes_require_authentication()
+    {
+        $response = $this->get('/admin/dashboard');
+        $response->assertRedirect('/login');
+    }
+    
+    public function test_admin_routes_require_admin_role()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        
+        $response = $this->actingAs($user)->get('/admin/dashboard');
+        $response->assertForbidden();
+    }
+    
+    public function test_api_routes_require_valid_token()
+    {
+        $response = $this->getJson('/api/users');
+        $response->assertUnauthorized();
+        
+        $response = $this->withHeader('Authorization', 'Bearer invalid-token')
+            ->getJson('/api/users');
+        $response->assertUnauthorized();
+    }
+}
+
+// ✅ Testing middleware parameters
+public function test_rate_limiting_middleware()
+{
+    $user = User::factory()->create();
+    
+    // Make requests up to limit
+    for ($i = 0; $i < 5; $i++) {
+        $response = $this->actingAs($user)->get('/api/limited');
+        $response->assertOk();
+    }
+    
+    // Next request should be rate limited
+    $response = $this->actingAs($user)->get('/api/limited');
+    $response->assertStatus(429);
+}
+```
+
+## Performance Considerations
+
+### Performance Do's
+- **Cache expensive operations** - Don't repeat calculations
+- **Use terminate() for logging** - After response sent
+- **Minimize database queries** - Use eager loading
+- **Short-circuit when possible** - Return early
+- **Profile middleware impact** - Monitor performance
+
+```php
+// ✅ Efficient middleware
+class CheckFeatureFlag
+{
+    private array $cache = [];
+    
+    public function handle(Request $request, Closure $next, string $feature): Response
+    {
+        // Short-circuit for unauthenticated
+        if (!$request->user()) {
+            return $next($request);
+        }
+        
+        // Cache within request
+        if (!isset($this->cache[$feature])) {
+            $this->cache[$feature] = Cache::remember(
+                "feature_flag:{$feature}",
+                300,
+                fn () => Feature::where('key', $feature)->value('enabled')
+            );
+        }
+        
+        if (!$this->cache[$feature]) {
+            abort(404);
+        }
+        
+        return $next($request);
+    }
+}
+
+// ✅ Defer heavy operations
+class AnalyticsMiddleware
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $request->attributes->set('analytics_start', microtime(true));
+        
+        return $next($request);
+    }
+    
+    public function terminate(Request $request, Response $response): void
+    {
+        // Heavy operations after response sent
+        dispatch(new RecordAnalytics(
+            $request->url(),
+            $request->attributes->get('analytics_start'),
+            $response->getStatusCode()
+        ));
+    }
+}
+```
+
+### Performance Don'ts
+```php
+// ❌ Don't perform heavy operations in handle
+public function handle($request, $next)
+{
+    $this->processLargeLogFile(); // Blocks request
+    $this->sendEmailNotification(); // Slow
+    $this->generateReport(); // CPU intensive
+    
+    return $next($request);
+}
+
+// ❌ Don't make multiple database queries
+public function handle($request, $next)
+{
+    $permissions = [];
+    foreach ($request->user()->roles as $role) {
+        $permissions[] = Permission::where('role_id', $role->id)->get();
+    }
+    // N+1 query problem
+}
+
+// ❌ Don't parse large files
+public function handle($request, $next)
+{
+    $config = json_decode(file_get_contents(storage_path('huge-config.json')));
+    // Parse on every request
+}
+```
+
+## Common Pitfalls to Avoid
+
+1. **Using old Kernel.php** - Use bootstrap/app.php
+2. **Heavy processing** - Keep middleware lightweight
+3. **Storing state** - Middleware should be stateless
+4. **Wrong parameter syntax** - Use colons not commas
+5. **Missing type hints** - Always type hint properly
+6. **Forgetting $next()** - Must call for request to continue
+7. **Wrong HTTP status** - Use appropriate codes
+8. **Circular dependencies** - Check middleware ordering
+9. **Not testing** - Test both success and failure cases
+10. **Ignoring performance** - Monitor middleware impact

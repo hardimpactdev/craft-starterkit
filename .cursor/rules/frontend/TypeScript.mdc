@@ -1,27 +1,483 @@
 ---
-description: TypeScript conventions and best practices
-globs: ["**/*.ts", "**/*.d.ts"]
-alwaysApply: false
+description: TypeScript conventions and best practices with comprehensive do's and don'ts
+globs: ["**/*.ts", "**/*.tsx", "**/*.d.ts", "**/*.vue"]
+alwaysApply: true
 ---
-## TypeScript Best Practices
-- Use TypeScript exclusively; prefer **types** over **interfaces**.
-- Avoid `enum`; use `const` objects instead for better tree-shaking.
-- Use Vue 3 with TypeScript, leveraging `defineComponent` and `PropType`.
-- Always type function arguments and return values.
 
-## Code Style and Structure
-- Write concise, well-structured TypeScript code with accurate, technical examples.
-- Use clear, descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`).
-- Follow a structured file organization:
-  - Exported components
-  - Composables
-  - Helpers
-  - Static content
-  - Types
-- Keep components small and focused, ensuring single responsibility.
+# TypeScript Development Rules and Best Practices
+
+## Core Principles
+
+### Do's
+- **Always use TypeScript** - Never use plain JavaScript files
+- **Enable strict mode** - Use `"strict": true` in tsconfig.json
+- **Type everything explicitly** - Avoid relying on type inference for public APIs
+- **Prefer type safety over any** - Use unknown instead of any when type is truly unknown
+- **Use const assertions** - Leverage `as const` for literal types
+
+### Don'ts
+- **Never use `any`** - It defeats the purpose of TypeScript
+- **Don't use `@ts-ignore`** - Fix the type issue instead
+- **Avoid `@ts-expect-error`** - Only use in test files when absolutely necessary
+- **Don't rely on implicit any** - Always provide explicit types
+- **Never suppress type errors** - Address them properly
+
+## Type Definitions
+
+### Types vs Interfaces (Do's)
+- **Prefer `type` over `interface`** - More flexible and consistent
+- **Use object literal syntax** - Cleaner for object types
+- **Leverage utility types** - Use built-in TypeScript utilities
+- **Export types explicitly** - Make them reusable
+
+```typescript
+// ✅ Good type definitions
+type User = {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'user'
+}
+
+type ApiResponse<T> = {
+  data: T
+  status: number
+  message?: string
+}
+
+type UserWithPosts = User & {
+  posts: Post[]
+}
+
+// Using utility types
+type PartialUser = Partial<User>
+type ReadonlyUser = Readonly<User>
+type UserKeys = keyof User
+```
+
+### Type Definition Don'ts
+```typescript
+// ❌ Avoid interfaces for object types
+interface User {
+  id: string
+  name: string
+}
+
+// ❌ Don't use any
+type Data = any
+
+// ❌ Don't use loose object types
+type Config = object // Too vague
+type Options = {} // Allows any property
+
+// ❌ Don't forget to export reusable types
+type InternalUser = { ... } // Should be exported if used elsewhere
+```
+
+## Enums and Constants
+
+### Do's - Use Const Objects
+- **Replace enums with const objects** - Better tree-shaking and type inference
+- **Use `as const` assertion** - For literal types
+- **Create type from const** - Derive types from const values
+
+```typescript
+// ✅ Const objects instead of enums
+export const UserRole = {
+  ADMIN: 'admin',
+  USER: 'user',
+  GUEST: 'guest'
+} as const
+
+export type UserRole = typeof UserRole[keyof typeof UserRole]
+
+// ✅ Const assertions for tuples
+const RGB_TUPLE = [255, 128, 0] as const
+type RGB = typeof RGB_TUPLE
+
+// ✅ Configuration objects
+export const API_ENDPOINTS = {
+  USERS: '/api/users',
+  POSTS: '/api/posts',
+  AUTH: '/api/auth'
+} as const
+```
+
+### Don'ts - Avoid Enums
+```typescript
+// ❌ Don't use enums
+enum UserRole {
+  Admin = 'ADMIN',
+  User = 'USER'
+}
+
+// ❌ Don't use numeric enums
+enum Status {
+  Active, // 0
+  Inactive // 1
+}
+
+// ❌ Don't forget as const
+const COLORS = ['red', 'green', 'blue'] // Type is string[], not tuple
+```
+
+## Function Typing
+
+### Function Do's
+- **Always type parameters** - Never rely on inference
+- **Always type return values** - Be explicit about what functions return
+- **Use arrow functions for consistency** - Unless `this` binding is needed
+- **Type async functions properly** - Return `Promise<T>`
+
+```typescript
+// ✅ Well-typed functions
+const calculateTotal = (items: CartItem[]): number => {
+  return items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+}
+
+const fetchUser = async (id: string): Promise<User | null> => {
+  try {
+    const response = await api.get(`/users/${id}`)
+    return response.data
+  } catch {
+    return null
+  }
+}
+
+// ✅ Function type definitions
+type EventHandler<T = void> = (event: Event) => T
+type AsyncOperation<T> = () => Promise<T>
+
+// ✅ Generic functions
+const mapArray = <T, U>(
+  items: T[], 
+  transform: (item: T) => U
+): U[] => {
+  return items.map(transform)
+}
+```
+
+### Function Don'ts
+```typescript
+// ❌ Missing parameter types
+const calculate = (a, b) => a + b
+
+// ❌ Missing return type
+const getUser = async (id: string) => {
+  return await fetchUser(id) // Return type inferred
+}
+
+// ❌ Using Function type
+const handler: Function = () => {} // Too generic
+
+// ❌ Callback without types
+items.map(item => item.value) // item type is implicit
+```
+
+## Vue 3 with TypeScript
+
+### Vue Component Do's
+- **Use `<script setup lang="ts">`** - Modern Vue 3 syntax
+- **Type props with interfaces** - Clear prop definitions
+- **Type emits explicitly** - Define emit signatures
+- **Type template refs** - Use proper ref types
+
+```typescript
+// ✅ Well-typed Vue component
+// Props interface
+type Props = {
+  title: string
+  count?: number
+  variant?: 'primary' | 'secondary'
+}
+
+// In component
+const props = withDefaults(defineProps<Props>(), {
+  count: 0,
+  variant: 'primary'
+})
+
+const emit = defineEmits<{
+  'update:count': [value: number]
+  'close': []
+}>()
+
+// Template refs
+const inputRef = ref<HTMLInputElement>()
+const componentRef = ref<InstanceType<typeof ChildComponent>>()
+```
+
+### Vue Component Don'ts
+```typescript
+// ❌ Don't use PropType (Options API style)
+props: {
+  title: {
+    type: String as PropType<string>
+  }
+}
+
+// ❌ Don't forget lang="ts"
+<script setup>
+// No TypeScript!
+</script>
+
+// ❌ Don't use untyped refs
+const someRef = ref() // Type is Ref<any>
+```
+
+## Generic Types
+
+### Generics Do's
+- **Use descriptive generic names** - Not just `T`
+- **Constrain generics when needed** - Use extends
+- **Provide default types** - When appropriate
+- **Document complex generics** - Add comments
+
+```typescript
+// ✅ Good generic usage
+type ApiResponse<TData, TError = string> = 
+  | { success: true; data: TData }
+  | { success: false; error: TError }
+
+type Collection<TItem extends { id: string }> = {
+  items: TItem[]
+  total: number
+  page: number
+}
+
+// ✅ Generic constraints
+const updateEntity = <TEntity extends { id: string }>(
+  entity: TEntity, 
+  updates: Partial<TEntity>
+): TEntity => {
+  return { ...entity, ...updates }
+}
+
+// ✅ Multiple generics with clear names
+type Mapper<TInput, TOutput> = (input: TInput) => TOutput
+```
+
+### Generics Don'ts
+```typescript
+// ❌ Single letter without meaning
+type Container<T> = { value: T }
+
+// ❌ No constraints when needed
+const process = <T>(items: T[]) => {} // T could be anything
+
+// ❌ Overly complex generics
+type Monster<T, U, V, W> = T extends U ? V : W // Hard to understand
+```
+
+## Error Handling Types
+
+### Error Handling Do's
+- **Type your errors** - Create specific error types
+- **Use discriminated unions** - For result types
+- **Handle all cases** - Exhaustive checking
+- **Type catch blocks** - Use type guards
+
+```typescript
+// ✅ Typed errors
+type ApiError = {
+  code: string
+  message: string
+  details?: Record<string, unknown>
+}
+
+// ✅ Result type pattern
+type Result<T, E = Error> = 
+  | { ok: true; value: T }
+  | { ok: false; error: E }
+
+const parseJson = <T>(json: string): Result<T, SyntaxError> => {
+  try {
+    return { ok: true, value: JSON.parse(json) }
+  } catch (error) {
+    return { ok: false, error: error as SyntaxError }
+  }
+}
+
+// ✅ Type guards for errors
+const isApiError = (error: unknown): error is ApiError => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error
+  )
+}
+```
+
+### Error Handling Don'ts
+```typescript
+// ❌ Untyped catch blocks
+try {
+  // ...
+} catch (e) {
+  console.log(e.message) // e is unknown
+}
+
+// ❌ Throwing any
+throw 'Error!' // Don't throw strings
+
+// ❌ Assuming error type
+catch (error) {
+  console.log((error as Error).message) // Dangerous assumption
+}
+```
 
 ## Naming Conventions
-- Use **lowercase with dashes** for directories (e.g., `components/auth-wizard`).
-- Use **PascalCase** for component names (e.g., `AuthWizard.vue`).
-- Use **camelCase** for composables (e.g., `useAuthState.ts`).
-- Maintain consistency across files and folders.
+
+### Naming Do's
+- **Types/Interfaces** - PascalCase (e.g., `UserProfile`)
+- **Type parameters** - Start with T (e.g., `TData`, `TError`)
+- **Constants** - UPPER_SNAKE_CASE for true constants
+- **Booleans** - Prefix with is/has/should (e.g., `isLoading`)
+- **Functions** - Verb prefixes (e.g., `getUserData`)
+
+```typescript
+// ✅ Good naming
+type UserProfile = { ... }
+type ApiResponse<TData> = { ... }
+
+const MAX_RETRY_COUNT = 3
+const API_BASE_URL = 'https://api.example.com'
+
+const isLoading = ref(false)
+const hasError = ref(false)
+const shouldRetry = computed(() => ...)
+
+const fetchUserData = async () => { ... }
+const validateEmail = (email: string) => { ... }
+```
+
+### Naming Don'ts
+```typescript
+// ❌ Poor naming
+type user = { ... } // Should be PascalCase
+type TData = { ... } // T prefix without generic
+
+const max = 3 // Not descriptive
+const apiUrl = '...' // Should be UPPER_SNAKE_CASE if constant
+
+const loading = ref(false) // Should be isLoading
+const error = ref(false) // Should be hasError
+
+const data = () => { ... } // Not descriptive
+const check = () => { ... } // Too vague
+```
+
+## Type Assertions and Guards
+
+### Type Assertions Do's
+- **Use type guards** - Runtime type checking
+- **Prefer type predicates** - For reusable guards
+- **Use `satisfies` operator** - For type checking without changing type
+- **Document assertions** - Explain why they're safe
+
+```typescript
+// ✅ Type guards
+const isString = (value: unknown): value is string => {
+  return typeof value === 'string'
+}
+
+const isUser = (value: unknown): value is User => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'email' in value
+  )
+}
+
+// ✅ Using satisfies
+const config = {
+  port: 3000,
+  host: 'localhost'
+} satisfies ServerConfig
+
+// ✅ Safe assertions with validation
+const element = document.getElementById('app')
+if (!element) throw new Error('App element not found')
+// Now TypeScript knows element is not null
+```
+
+### Type Assertions Don'ts
+```typescript
+// ❌ Unsafe assertions
+const user = {} as User // Lying to TypeScript
+
+// ❌ Double assertions
+const value = (input as any) as string // Very dangerous
+
+// ❌ Asserting without validation
+const element = document.getElementById('app') as HTMLDivElement
+// Could be null or different element type
+
+// ❌ Using non-null assertion carelessly
+const value = maybeNull! // Could crash at runtime
+```
+
+## Import/Export Patterns
+
+### Import/Export Do's
+- **Use named exports** - For better refactoring
+- **Group imports** - By type and source
+- **Export types separately** - Use `export type`
+- **Use barrel exports sparingly** - Only for public APIs
+
+```typescript
+// ✅ Well-organized imports
+// External dependencies
+import { ref, computed } from 'vue'
+import { z } from 'zod'
+
+// Internal dependencies  
+import { useAuth } from '@/composables/useAuth'
+import { api } from '@/services/api'
+
+// Types
+import type { User, Post } from '@/types'
+
+// ✅ Named exports
+export const useUser = () => { ... }
+export type { UserProfile, UserSettings }
+
+// ✅ Barrel export for public API
+// index.ts
+export * from './useAuth'
+export * from './useUser'
+export type * from './types'
+```
+
+### Import/Export Don'ts
+```typescript
+// ❌ Default exports for utilities
+export default () => { ... } // Hard to refactor
+
+// ❌ Mixing type and value exports
+export { User, useUser } // Use export type for types
+
+// ❌ Circular dependencies
+// fileA.ts
+import { something } from './fileB'
+// fileB.ts  
+import { other } from './fileA'
+
+// ❌ Import everything
+import * as Utils from './utils' // Import what you need
+```
+
+## Common Pitfalls to Avoid
+
+1. **Using `any` type** - Always use `unknown` or proper types
+2. **Missing return types** - Explicitly type all function returns
+3. **Using enums** - Replace with const objects
+4. **Type assertions without validation** - Always validate before asserting
+5. **Implicit any in catch blocks** - Type your errors properly
+6. **Using `Function` type** - Define specific function signatures
+7. **Missing strict mode** - Always enable TypeScript strict mode
+8. **Default exports** - Use named exports for better refactoring
+9. **Forgetting `as const`** - Use for literal types
+10. **Not typing Vue components** - Always use TypeScript in Vue files

@@ -1,0 +1,1 @@
+This directory should only contain form requests. See `/.cursor/rules/Backend/FormRequests.mdc` for all rules related to form requests.

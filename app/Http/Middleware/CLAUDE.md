@@ -1,0 +1,1 @@
+This directory should only contain middleware. See `/.cursor/rules/Backend/Middleware.mdc` for all rules related to middleware.

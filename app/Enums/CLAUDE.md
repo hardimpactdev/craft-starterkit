@@ -1,0 +1,1 @@
+This directory should only contain Enums. See `/.cursor/rules/Backend/Enums.mdc` for all rules related to Enums.

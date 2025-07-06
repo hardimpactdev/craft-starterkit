@@ -1,0 +1,1002 @@
+---
+description: Laravel Data DTO patterns and best practices - comprehensive rules for v4
+globs: ["**/app/Data/**/*.php", "**/app/Models/**/*.php", "**/app/Http/Controllers/**/*.php"]
+alwaysApply: true
+---
+
+# Laravel Data DTO Development Rules and Best Practices
+
+## Core Principles
+
+### Do's
+- **Use DTOs for all data transfer** - Between layers and to/from frontend
+- **Leverage Laravel Data features** - Use the full power of the package
+- **Type everything strictly** - No mixed or untyped properties
+- **Use DTOs in model casts** - For JSON columns and complex attributes
+- **Follow single responsibility** - One DTO per concept
+
+### Don'ts
+- **Never pass arrays** - Always use DTOs for structured data
+- **Don't use stdClass** - DTOs provide type safety
+- **Avoid validation attributes** - Use rules() method
+- **Don't mutate DTOs** - They should be immutable
+- **Never expose models directly** - Always transform through DTOs
+
+## Basic DTO Structure
+
+### DTO Structure Do's
+- **Extend Spatie\LaravelData\Data** - Base class for all DTOs
+- **Use constructor property promotion** - Clean PHP 8 syntax
+- **Define nullable properties correctly** - Use ?Type for optional
+- **Initialize collections** - Prevent null issues
+- **Add PHPDoc when helpful** - For complex properties
+
+```php
+// ✅ Well-structured DTO
+<?php
+
+namespace App\Data;
+
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Attributes\Computed;
+use Spatie\LaravelData\Attributes\MapName;
+use Illuminate\Support\Collection;
+use Carbon\Carbon;
+
+class UserData extends Data
+{
+    public function __construct(
+        public ?int $id,
+        public string $name,
+        public string $email,
+        public ?string $phone,
+        public bool $is_active = true,
+        public ?Carbon $email_verified_at = null,
+        /** @var Collection<int, string> */
+        public ?Collection $tags = null,
+        public ?AddressData $address = null,
+        #[Computed]
+        public ?string $display_name = null,
+    ) {
+        $this->tags ??= collect();
+        $this->display_name = $this->computeDisplayName();
+    }
+    
+    private function computeDisplayName(): string
+    {
+        return "{$this->name} ({$this->email})";
+    }
+    
+    public static function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'is_active' => ['boolean'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:50'],
+            'address' => ['nullable', 'array'],
+            'address.street' => ['required_with:address', 'string'],
+            'address.city' => ['required_with:address', 'string'],
+        ];
+    }
+}
+
+// ✅ Nested DTO
+class AddressData extends Data
+{
+    public function __construct(
+        public string $street,
+        public string $city,
+        public string $state,
+        public string $postal_code,
+        public string $country = 'US',
+        #[MapName('lat')]
+        public ?float $latitude = null,
+        #[MapName('lng')]
+        public ?float $longitude = null,
+    ) {}
+    
+    public static function rules(): array
+    {
+        return [
+            'street' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:100'],
+            'state' => ['required', 'string', 'size:2'],
+            'postal_code' => ['required', 'string', 'regex:/^\d{5}(-\d{4})?$/'],
+            'country' => ['required', 'string', 'size:2'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+        ];
+    }
+}
+```
+
+### DTO Structure Don'ts
+```php
+// ❌ Don't use untyped properties
+class BadData extends Data
+{
+    public function __construct(
+        public $name, // No type
+        public $data, // Too generic
+    ) {}
+}
+
+// ❌ Don't use validation attributes
+use Spatie\LaravelData\Attributes\Validation\Required;
+use Spatie\LaravelData\Attributes\Validation\Email;
+
+class WrongValidation extends Data
+{
+    public function __construct(
+        #[Required, Email] // Don't use these
+        public string $email,
+    ) {}
+}
+
+// ❌ Don't forget to initialize collections
+class UninitializedData extends Data
+{
+    public function __construct(
+        public Collection $items, // Could be null
+    ) {
+        // Missing: $this->items ??= collect();
+    }
+}
+
+// ❌ Don't mix concerns
+class MixedConcerns extends Data
+{
+    public function save() // DTOs shouldn't have persistence logic
+    {
+        User::create($this->toArray());
+    }
+}
+```
+
+## FormRequest Integration
+
+### FormRequest Integration Do's
+- **Reference FormRequests.mdc** - For validation patterns
+- **Use WithData trait** - In all FormRequests
+- **Return DTO from dataClass()** - Type-safe form handling
+- **Create separate DTOs** - For create/update operations
+- **Pass DTOs to views** - As 'form' prop
+
+```php
+// ✅ FormRequest with DTO (see FormRequests.mdc)
+use Spatie\LaravelData\WithData;
+
+class StoreUserRequest extends FormRequest
+{
+    use WithData;
+    
+    public function authorize(): bool
+    {
+        return $this->user()->can('create', User::class);
+    }
+    
+    protected function dataClass(): string
+    {
+        return CreateUserData::class;
+    }
+}
+
+// ✅ Create/Update DTOs
+class CreateUserData extends Data
+{
+    public function __construct(
+        public string $name,
+        public string $email,
+        public string $password,
+        public string $password_confirmation,
+        public ?string $role = 'user',
+    ) {}
+    
+    public static function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['nullable', 'string', 'in:admin,user'],
+        ];
+    }
+    
+    public static function empty(): self
+    {
+        return new self(
+            name: '',
+            email: '',
+            password: '',
+            password_confirmation: '',
+            role: 'user',
+        );
+    }
+}
+
+class UpdateUserData extends Data
+{
+    public function __construct(
+        public string $name,
+        public string $email,
+        public ?string $password = null,
+        public ?string $password_confirmation = null,
+        public ?string $role = null,
+    ) {}
+    
+    public static function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,{id}'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'role' => ['nullable', 'string', 'in:admin,user'],
+        ];
+    }
+}
+
+// ✅ Controller using DTOs with forms
+class UserController extends Controller
+{
+    public function create()
+    {
+        return Inertia::render('Users/Create', [
+            'form' => CreateUserData::empty(),
+            'roles' => RoleData::collection(Role::all()),
+        ]);
+    }
+    
+    public function store(StoreUserRequest $request)
+    {
+        $data = $request->getData(); // Returns CreateUserData
+        
+        $user = User::create([
+            'name' => $data->name,
+            'email' => $data->email,
+            'password' => bcrypt($data->password),
+            'role' => $data->role,
+        ]);
+        
+        return redirect()->route('users.show', $user);
+    }
+}
+```
+
+### FormRequest Integration Don'ts
+```php
+// ❌ Don't implement rules() in FormRequest
+class BadFormRequest extends FormRequest
+{
+    use WithData;
+    
+    public function rules(): array // Should be in DTO
+    {
+        return ['name' => 'required'];
+    }
+}
+
+// ❌ Don't pass non-DTO data to forms
+return Inertia::render('Users/Create', [
+    'form' => [
+        'name' => '',
+        'email' => '',
+    ], // Should be CreateUserData::empty()
+]);
+
+// ❌ Don't forget dataClass() method
+class IncompleteRequest extends FormRequest
+{
+    use WithData;
+    // Missing dataClass() method
+}
+```
+
+## Model Casts and Attributes
+
+### Model Casts Do's
+- **Cast JSON columns to DTOs** - Type-safe access
+- **Use DataCollection for arrays** - Of DTO objects
+- **Create custom casts** - For complex transformations
+- **Document cast usage** - In model PHPDoc
+- **Handle null values** - In cast implementation
+
+```php
+// ✅ Model with DTO casts
+use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Casts\DataCollectionCast;
+
+class User extends Model
+{
+    protected $casts = [
+        'preferences' => UserPreferencesData::class,
+        'address' => AddressData::class,
+        'metadata' => MetadataData::class,
+        'notification_settings' => NotificationSettingsData::class,
+    ];
+    
+    /**
+     * @property UserPreferencesData $preferences
+     * @property AddressData|null $address
+     * @property MetadataData $metadata
+     */
+}
+
+// ✅ DTO for JSON column
+class UserPreferencesData extends Data
+{
+    public function __construct(
+        public string $theme = 'light',
+        public string $language = 'en',
+        public bool $email_notifications = true,
+        public bool $push_notifications = false,
+        public array $dashboard_widgets = [],
+    ) {}
+    
+    public static function rules(): array
+    {
+        return [
+            'theme' => ['string', 'in:light,dark,auto'],
+            'language' => ['string', 'in:en,es,fr,de'],
+            'email_notifications' => ['boolean'],
+            'push_notifications' => ['boolean'],
+            'dashboard_widgets' => ['array'],
+            'dashboard_widgets.*' => ['string'],
+        ];
+    }
+}
+
+// ✅ Model with DataCollection cast
+class Order extends Model
+{
+    protected $casts = [
+        'items' => DataCollectionCast::class . ':' . OrderItemData::class,
+        'status_history' => DataCollectionCast::class . ':' . StatusChangeData::class,
+    ];
+    
+    /**
+     * @property DataCollection<OrderItemData> $items
+     * @property DataCollection<StatusChangeData> $status_history
+     */
+}
+
+// ✅ Complex nested structure
+class ProductData extends Data
+{
+    public function __construct(
+        public int $id,
+        public string $name,
+        public PriceData $price,
+        public InventoryData $inventory,
+        public DataCollection $variants,
+        public ?MediaData $featured_image = null,
+    ) {}
+}
+
+// ✅ Custom cast for special handling
+class EncryptedDataCast implements CastsAttributes
+{
+    public function __construct(
+        protected string $dataClass,
+    ) {}
+    
+    public function get($model, $key, $value, $attributes)
+    {
+        if (is_null($value)) {
+            return null;
+        }
+        
+        $decrypted = decrypt($value);
+        return $this->dataClass::from(json_decode($decrypted, true));
+    }
+    
+    public function set($model, $key, $value, $attributes)
+    {
+        if (is_null($value)) {
+            return null;
+        }
+        
+        if ($value instanceof Data) {
+            $value = $value->toArray();
+        }
+        
+        return encrypt(json_encode($value));
+    }
+}
+```
+
+### Model Casts Don'ts
+```php
+// ❌ Don't forget to cast DTO attributes
+class BadModel extends Model
+{
+    // No casts defined, accessing as arrays
+    public function getPreferences()
+    {
+        return $this->preferences; // Returns array, not DTO
+    }
+}
+
+// ❌ Don't use array casts for structured data
+protected $casts = [
+    'address' => 'array', // Should be AddressData::class
+    'items' => 'array', // Should be DataCollection
+];
+
+// ❌ Don't cast to wrong types
+protected $casts = [
+    'settings' => 'json', // Use DTO instead
+    'metadata' => Collection::class, // Use DTO for structure
+];
+
+// ❌ Don't forget null handling
+class BadCast implements CastsAttributes
+{
+    public function get($model, $key, $value, $attributes)
+    {
+        // Will fail if $value is null
+        return UserData::from(json_decode($value, true));
+    }
+}
+```
+
+## Data Collections
+
+### Data Collections Do's
+- **Use DataCollection for DTO arrays** - Type-safe collections
+- **Specify generic type** - In PHPDoc comments
+- **Use collection() factory** - For creating collections
+- **Leverage collection methods** - map, filter, etc.
+- **Handle empty collections** - Proper initialization
+
+```php
+// ✅ Using DataCollection
+use Spatie\LaravelData\DataCollection;
+
+class TeamData extends Data
+{
+    /**
+     * @param DataCollection<MemberData> $members
+     * @param DataCollection<ProjectData> $projects
+     */
+    public function __construct(
+        public int $id,
+        public string $name,
+        public DataCollection $members,
+        public DataCollection $projects,
+        #[Computed]
+        public ?int $active_member_count = null,
+    ) {
+        $this->active_member_count = $this->members
+            ->filter(fn(MemberData $member) => $member->is_active)
+            ->count();
+    }
+    
+    public static function fromModel(Team $team): self
+    {
+        return new self(
+            id: $team->id,
+            name: $team->name,
+            members: MemberData::collection($team->members),
+            projects: ProjectData::collection($team->projects),
+        );
+    }
+}
+
+// ✅ Creating collections
+// From Eloquent collection
+$users = UserData::collection(User::all());
+
+// From array
+$items = OrderItemData::collection([
+    ['name' => 'Item 1', 'price' => 10.00],
+    ['name' => 'Item 2', 'price' => 20.00],
+]);
+
+// Empty collection
+$empty = UserData::collection([]);
+
+// ✅ Collection operations
+class ReportData extends Data
+{
+    /**
+     * @param DataCollection<TransactionData> $transactions
+     */
+    public function __construct(
+        public string $period,
+        public DataCollection $transactions,
+    ) {}
+    
+    #[Computed]
+    public function total_amount(): float
+    {
+        return $this->transactions->sum('amount');
+    }
+    
+    #[Computed]
+    public function successful_transactions(): DataCollection
+    {
+        return $this->transactions->filter(
+            fn(TransactionData $t) => $t->status === 'success'
+        );
+    }
+    
+    #[Computed]
+    public function grouped_by_type(): Collection
+    {
+        return $this->transactions->groupBy('type');
+    }
+}
+```
+
+### Data Collections Don'ts
+```php
+// ❌ Don't use array instead of DataCollection
+class BadData extends Data
+{
+    public function __construct(
+        public array $items, // Should be DataCollection
+    ) {}
+}
+
+// ❌ Don't forget type hints
+class NoTypeHint extends Data
+{
+    public function __construct(
+        public DataCollection $users, // Missing @param doc
+    ) {}
+}
+
+// ❌ Don't mix Laravel collections with DataCollection
+use Illuminate\Support\Collection;
+
+class MixedCollections extends Data
+{
+    public function __construct(
+        public Collection $items, // Should be DataCollection
+    ) {}
+}
+
+// ❌ Don't create collections incorrectly
+$bad = new DataCollection($items); // Use ::collection()
+```
+
+## Advanced Features
+
+### Advanced Features Do's
+- **Use lazy properties** - For expensive computations
+- **Implement includes/excludes** - Flexible API responses
+- **Use pipelines** - For data transformation
+- **Add custom methods** - For business logic
+- **Use wrapping** - For API consistency
+
+```php
+// ✅ Lazy properties for performance
+use Spatie\LaravelData\Lazy;
+
+class ProductData extends Data
+{
+    public function __construct(
+        public int $id,
+        public string $name,
+        public float $price,
+        public Lazy|DataCollection $reviews,
+        public Lazy|float $average_rating,
+        public Lazy|StoreData $store,
+    ) {}
+    
+    public static function fromModel(Product $product): self
+    {
+        return new self(
+            id: $product->id,
+            name: $product->name,
+            price: $product->price,
+            reviews: Lazy::create(fn() => ReviewData::collection($product->reviews)),
+            average_rating: Lazy::create(fn() => $product->reviews()->avg('rating')),
+            store: Lazy::create(fn() => StoreData::from($product->store)),
+        );
+    }
+}
+
+// ✅ Include/Exclude for API flexibility
+class UserData extends Data
+{
+    public function __construct(
+        public int $id,
+        public string $name,
+        public string $email,
+        public Lazy|DataCollection $posts,
+        public Lazy|DataCollection $comments,
+        public Lazy|ProfileData $profile,
+    ) {}
+    
+    public static function fromModel(User $user): self
+    {
+        return new self(
+            id: $user->id,
+            name: $user->name,
+            email: $user->email,
+            posts: Lazy::create(fn() => PostData::collection($user->posts)),
+            comments: Lazy::create(fn() => CommentData::collection($user->comments)),
+            profile: Lazy::create(fn() => ProfileData::from($user->profile)),
+        );
+    }
+}
+
+// Usage with includes
+$userData = UserData::from($user)->include('posts', 'profile');
+
+// ✅ Custom pipelines
+use Spatie\LaravelData\Support\DataPipeline;
+
+class CustomData extends Data
+{
+    public static function pipeline(): DataPipeline
+    {
+        return parent::pipeline()
+            ->through(NormalizeDataPipe::class)
+            ->through(ValidateDataPipe::class)
+            ->through(AuthorizeDataPipe::class);
+    }
+}
+
+// ✅ Wrapping for API responses
+class ApiResponseData extends Data
+{
+    public function __construct(
+        public mixed $data,
+        public bool $success = true,
+        public ?string $message = null,
+        public ?array $meta = null,
+    ) {}
+    
+    public static function success(mixed $data, ?string $message = null): self
+    {
+        return new self(
+            data: $data,
+            success: true,
+            message: $message,
+        );
+    }
+    
+    public static function error(string $message, mixed $data = null): self
+    {
+        return new self(
+            data: $data,
+            success: false,
+            message: $message,
+        );
+    }
+}
+
+// ✅ Custom transformation methods
+class PriceData extends Data
+{
+    public function __construct(
+        public float $amount,
+        public string $currency = 'USD',
+    ) {}
+    
+    public function formatted(): string
+    {
+        return match($this->currency) {
+            'USD' => '$' . number_format($this->amount, 2),
+            'EUR' => '€' . number_format($this->amount, 2, ',', '.'),
+            'GBP' => '£' . number_format($this->amount, 2),
+            default => $this->amount . ' ' . $this->currency,
+        };
+    }
+    
+    public function inCents(): int
+    {
+        return (int) ($this->amount * 100);
+    }
+    
+    public function convertTo(string $currency, float $rate): self
+    {
+        return new self(
+            amount: $this->amount * $rate,
+            currency: $currency,
+        );
+    }
+}
+```
+
+### Advanced Features Don'ts
+```php
+// ❌ Don't compute expensive operations eagerly
+class EagerData extends Data
+{
+    public function __construct(
+        public int $id,
+        public array $computed_data, // Should be Lazy
+    ) {
+        // This runs for every instance
+        $this->computed_data = $this->expensiveOperation();
+    }
+}
+
+// ❌ Don't include everything by default
+class OverIncluded extends Data
+{
+    public function __construct(
+        public int $id,
+        public DataCollection $posts, // Not lazy, always loaded
+        public DataCollection $comments, // Not lazy, always loaded
+    ) {}
+}
+
+// ❌ Don't break pipeline flow
+public static function pipeline(): DataPipeline
+{
+    // Don't skip parent pipeline
+    return DataPipeline::create()
+        ->through(CustomPipe::class); // Missing parent pipes
+}
+
+// ❌ Don't use wrapping incorrectly
+return response()->json([
+    'data' => $userData->toArray(), // Use DTO wrapping instead
+    'success' => true,
+]);
+```
+
+## Validation and Messages
+
+### Validation Do's
+- **Define all rules in rules() method** - Single source of truth
+- **Use Laravel validation rules** - Familiar syntax
+- **Add custom messages** - User-friendly errors
+- **Use conditional validation** - Complex scenarios
+- **Validate nested data** - Dot notation
+
+```php
+// ✅ Comprehensive validation
+class RegistrationData extends Data
+{
+    public function __construct(
+        public string $username,
+        public string $email,
+        public string $password,
+        public string $password_confirmation,
+        public bool $agree_terms,
+        public ?string $referral_code = null,
+        public ProfileData $profile,
+    ) {}
+    
+    public static function rules(): array
+    {
+        return [
+            'username' => [
+                'required',
+                'string',
+                'min:3',
+                'max:20',
+                'regex:/^[a-zA-Z0-9_]+$/',
+                'unique:users,username',
+            ],
+            'email' => [
+                'required',
+                'email:rfc,dns',
+                'max:255',
+                'unique:users,email',
+            ],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                Password::defaults(),
+            ],
+            'agree_terms' => [
+                'required',
+                'accepted',
+            ],
+            'referral_code' => [
+                'nullable',
+                'string',
+                'exists:referral_codes,code',
+            ],
+            'profile.first_name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+            'profile.last_name' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+            'profile.birth_date' => [
+                'required',
+                'date',
+                'before:' . now()->subYears(18)->format('Y-m-d'),
+            ],
+        ];
+    }
+    
+    public static function messages(): array
+    {
+        return [
+            'username.regex' => 'Username can only contain letters, numbers, and underscores.',
+            'username.unique' => 'This username is already taken.',
+            'email.unique' => 'An account with this email already exists.',
+            'password.confirmed' => 'Password confirmation does not match.',
+            'agree_terms.accepted' => 'You must agree to the terms of service.',
+            'profile.birth_date.before' => 'You must be at least 18 years old.',
+            'referral_code.exists' => 'Invalid referral code.',
+        ];
+    }
+    
+    public static function attributes(): array
+    {
+        return [
+            'profile.first_name' => 'first name',
+            'profile.last_name' => 'last name',
+            'profile.birth_date' => 'date of birth',
+        ];
+    }
+}
+
+// ✅ Conditional validation
+class PaymentData extends Data
+{
+    public function __construct(
+        public string $method,
+        public ?CardData $card = null,
+        public ?BankData $bank = null,
+        public ?WalletData $wallet = null,
+    ) {}
+    
+    public static function rules(): array
+    {
+        return [
+            'method' => ['required', 'in:card,bank,wallet'],
+            'card' => ['required_if:method,card', 'array'],
+            'card.number' => ['required_if:method,card', 'string', 'size:16'],
+            'card.cvv' => ['required_if:method,card', 'string', 'size:3'],
+            'bank' => ['required_if:method,bank', 'array'],
+            'bank.account_number' => ['required_if:method,bank', 'string'],
+            'bank.routing_number' => ['required_if:method,bank', 'string', 'size:9'],
+            'wallet' => ['required_if:method,wallet', 'array'],
+            'wallet.provider' => ['required_if:method,wallet', 'in:paypal,stripe'],
+        ];
+    }
+}
+```
+
+### Validation Don'ts
+```php
+// ❌ Don't use validation attributes
+use Spatie\LaravelData\Attributes\Validation\Required;
+
+class BadValidation extends Data
+{
+    public function __construct(
+        #[Required] // Don't use
+        public string $name,
+    ) {}
+}
+
+// ❌ Don't validate in constructor
+public function __construct(
+    public string $email,
+) {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new \InvalidArgumentException('Invalid email');
+    }
+}
+
+// ❌ Don't forget nested validation
+public static function rules(): array
+{
+    return [
+        'address' => ['required'], // Missing nested rules
+        // Should have address.street, address.city, etc.
+    ];
+}
+
+// ❌ Don't use generic messages
+public static function messages(): array
+{
+    return [
+        'email.required' => 'This field is required', // Too generic
+    ];
+}
+```
+
+## Testing DTOs
+
+### Testing Do's
+- **Test validation rules** - All scenarios
+- **Test transformations** - from() and toArray()
+- **Test computed properties** - Correct calculations
+- **Test edge cases** - Null values, empty collections
+- **Test with factories** - Realistic data
+
+```php
+// ✅ Testing DTO validation
+use Spatie\LaravelData\ValidationException;
+
+class UserDataTest extends TestCase
+{
+    public function test_validates_required_fields()
+    {
+        $this->expectException(ValidationException::class);
+        
+        UserData::validate([
+            'name' => '',
+            'email' => 'invalid-email',
+        ]);
+    }
+    
+    public function test_accepts_valid_data()
+    {
+        $data = UserData::validate([
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'phone' => '+1234567890',
+        ]);
+        
+        $this->assertInstanceOf(UserData::class, $data);
+        $this->assertEquals('John Doe', $data->name);
+    }
+    
+    public function test_computed_properties()
+    {
+        $data = new UserData(
+            id: 1,
+            name: 'John Doe',
+            email: 'john@example.com',
+        );
+        
+        $this->assertEquals('John Doe (john@example.com)', $data->display_name);
+    }
+}
+
+// ✅ Testing model integration
+public function test_model_casts_to_dto()
+{
+    $user = User::factory()->create([
+        'preferences' => [
+            'theme' => 'dark',
+            'language' => 'es',
+        ],
+    ]);
+    
+    $this->assertInstanceOf(UserPreferencesData::class, $user->preferences);
+    $this->assertEquals('dark', $user->preferences->theme);
+}
+
+// ✅ Testing collections
+public function test_data_collection_operations()
+{
+    $transactions = TransactionData::collection([
+        ['amount' => 100, 'status' => 'success'],
+        ['amount' => 50, 'status' => 'failed'],
+        ['amount' => 200, 'status' => 'success'],
+    ]);
+    
+    $successful = $transactions->filter(
+        fn($t) => $t->status === 'success'
+    );
+    
+    $this->assertCount(2, $successful);
+    $this->assertEquals(300, $successful->sum('amount'));
+}
+```
+
+## Common Pitfalls to Avoid
+
+1. **Using arrays instead of DTOs** - Always create proper DTOs
+2. **Validation attributes** - Use rules() method instead
+3. **Untyped properties** - Always specify types
+4. **Not casting model attributes** - Add DTO casts
+5. **Computing in constructor** - Use computed properties
+6. **Not using DataCollection** - For arrays of DTOs
+7. **Missing FormRequest integration** - See FormRequests.mdc
+8. **Eager loading everything** - Use lazy properties
+9. **Generic validation messages** - Be specific
+10. **Mutating DTOs** - Keep them immutable

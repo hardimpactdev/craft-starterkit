@@ -1,59 +1,589 @@
 ---
-description: Waymaker routing system and controller guidelines
-globs: ["**/app/Http/Controllers/**/*.php", "**/routes/**/*.php"]
-alwaysApply: false
+description: Waymaker routing system patterns and best practices - comprehensive rules
+globs: ["**/routes/**/*.php", "**/app/Http/Controllers/**/*.php"]
+alwaysApply: true
 ---
-## Routes (Waymaker Paradigm)
-- **DO NOT manually define routes** in `web.php`.
-- Routes are **automatically generated** by Waymaker based on controller attributes.
-- Use Waymaker PHP attributes on controller methods:
-  - `#[Get]` for GET requests
-  - `#[Post]` for POST requests
-  - `#[Patch]` for PATCH requests
-  - `#[Delete]` for DELETE requests
-  - `#[Put]` for PUT requests
-- Route naming convention: Automatically generated as `Controllers.{ControllerName}.{methodName}`.
-- Customize routes with attribute parameters:
-  - `uri`: Custom URI path
-  - `parameters`: Route parameters (e.g., `['project']`)
-  - `middleware`: Route-specific middleware
-- Set controller route prefix: `protected static string $routePrefix = 'resources';`
-- Run `php artisan waymaker:make` to regenerate routes after controller changes.
 
-## Controllers
-- Use **resourceful controllers** with only the following public methods: `index`, `show`, `create`, `store`, `edit`, `update`, `destroy`.
-- **Private methods** are allowed within controllers.
-- **Must use Waymaker attributes** on all public methods:
-  ```php
-  use HardImpact\Waymaker\{Get, Post, Patch, Delete};
-  
-  class ProjectController extends Controller
-  {
-      #[Get]
-      public function index(): Response
-      
-      #[Get(uri: '/projects/create')]
-      public function create(): Response
-      
-      #[Post]
-      public function store(Request $request): RedirectResponse
-      
-      #[Get(parameters: ['project'])]
-      public function show(Project $project): Response
-  }
-  ```
-- **Validation**: Always use FormRequest with corresponding DTO for validation.
-  - Never use inline validation in controllers.
-- Create models using validated data:
-  ```php
-  $project = Project::create($validated);
-  ```
-- Update models using validated data:
-  ```php
-  $project->update($validated);
-  ```
-- This project uses **Laravel Inertia with Vue**:
-  - Always return views using `Inertia::render(viewPath, data)`.
-  - Return `Inertia\Response` for GET methods.
-  - Return `Illuminate\Http\RedirectResponse` for POST/PATCH/DELETE methods.
-  - If a Vue file is missing, create it according to `Frontend.mdc` guidelines.
+# Waymaker Routes Development Rules and Best Practices
+
+## Core Principles
+
+### Do's
+- **Use Waymaker attributes exclusively** - Routes are auto-generated
+- **Follow RESTful conventions** - Standard HTTP methods and URIs
+- **Use route model binding** - Leverage Laravel's automatic resolution
+- **Apply middleware via attributes** - Keep routing logic in controllers
+- **Regenerate routes after changes** - Run waymaker:make command
+
+### Don'ts
+- **Never define routes manually** - No entries in web.php
+- **Don't use route() helper** - Use Controllers object in frontend
+- **Avoid custom route names** - Use auto-generated names
+- **Don't forget route parameters** - Define in attribute parameters
+- **Never hardcode URIs** - Routes should be generated
+
+## Waymaker Attributes
+
+### HTTP Method Attributes Do's
+- **Import Waymaker attributes** - Use proper namespace
+- **Match HTTP verbs correctly** - GET for retrieval, POST for creation
+- **Define parameters explicitly** - Use parameters array
+- **Add middleware when needed** - Via middleware parameter
+- **Customize URIs sparingly** - Only when necessary
+
+```php
+// ✅ Correct attribute usage
+use HardImpact\Waymaker\{Get, Post, Patch, Delete, Put};
+
+class ProjectController extends Controller
+{
+    // Simple GET route
+    #[Get]
+    public function index(): Response
+    {
+        return Inertia::render('Projects/Index');
+    }
+    
+    // GET with route parameter
+    #[Get(parameters: ['project'])]
+    public function show(Project $project): Response
+    {
+        return Inertia::render('Projects/Show', [
+            'project' => ProjectData::from($project),
+        ]);
+    }
+    
+    // GET with custom URI
+    #[Get(uri: '/projects/archived')]
+    public function archived(): Response
+    {
+        return Inertia::render('Projects/Archived');
+    }
+    
+    // POST with middleware
+    #[Post(middleware: ['verified'])]
+    public function store(StoreProjectRequest $request): RedirectResponse
+    {
+        $project = Project::create($request->validated());
+        return redirect()->route('projects.show', $project);
+    }
+    
+    // PATCH with multiple parameters
+    #[Patch(parameters: ['project', 'task'])]
+    public function updateTask(Project $project, Task $task): RedirectResponse
+    {
+        $task->update(request()->validated());
+        return back();
+    }
+    
+    // DELETE with authorization middleware
+    #[Delete(
+        parameters: ['project'],
+        middleware: ['can:delete,project']
+    )]
+    public function destroy(Project $project): RedirectResponse
+    {
+        $project->delete();
+        return redirect()->route('projects.index');
+    }
+}
+
+// ✅ Nested resource routes
+class ProjectTaskController extends Controller
+{
+    #[Get(parameters: ['project'])]
+    public function index(Project $project): Response
+    {
+        return Inertia::render('Projects/Tasks/Index', [
+            'project' => ProjectData::from($project),
+            'tasks' => TaskData::collection($project->tasks),
+        ]);
+    }
+    
+    #[Post(parameters: ['project'])]
+    public function store(Project $project, StoreTaskRequest $request): RedirectResponse
+    {
+        $project->tasks()->create($request->validated());
+        return back();
+    }
+}
+
+// ✅ API routes with proper attributes
+class ApiProjectController extends Controller
+{
+    #[Get(uri: '/api/projects')]
+    public function index(): JsonResponse
+    {
+        return response()->json([
+            'data' => ProjectData::collection(Project::all()),
+        ]);
+    }
+}
+```
+
+### HTTP Method Attributes Don'ts
+```php
+// ❌ Don't define routes in web.php
+Route::get('/projects', [ProjectController::class, 'index']);
+Route::resource('projects', ProjectController::class);
+
+// ❌ Don't forget attributes
+public function index() // Missing #[Get]
+{
+    return view('projects.index');
+}
+
+// ❌ Don't use wrong HTTP methods
+#[Get] // Should be POST
+public function store(Request $request)
+{
+    // Creating resource with GET
+}
+
+// ❌ Don't forget parameters
+#[Get] // Missing parameters: ['project']
+public function show(Project $project)
+{
+    // Route won't bind model
+}
+
+// ❌ Don't use non-standard methods
+#[Get(uri: '/projects/new')] // Should be 'create'
+public function new()
+{
+    // Non-RESTful naming
+}
+```
+
+## Route Parameters
+
+### Route Parameters Do's
+- **Define all route parameters** - In parameters array
+- **Use model binding** - Leverage automatic resolution
+- **Match parameter names** - With method arguments
+- **Order parameters correctly** - Parent resources first
+- **Use optional parameters** - With nullable types
+
+```php
+// ✅ Single parameter
+#[Get(parameters: ['user'])]
+public function show(User $user): Response
+{
+    // $user is automatically resolved
+}
+
+// ✅ Multiple parameters
+#[Get(parameters: ['project', 'milestone'])]
+public function showMilestone(Project $project, Milestone $milestone): Response
+{
+    // Both models are resolved
+}
+
+// ✅ Optional parameters
+#[Get(parameters: ['category?'])]
+public function index(?Category $category = null): Response
+{
+    $products = $category 
+        ? $category->products 
+        : Product::all();
+}
+
+// ✅ Custom parameter names
+#[Get(parameters: ['project:slug'])]
+public function show(Project $project): Response
+{
+    // Resolves by slug instead of id
+}
+
+// ✅ Nested resources with proper ordering
+#[Patch(parameters: ['organization', 'project', 'task'])]
+public function update(
+    Organization $organization,
+    Project $project,
+    Task $task,
+    UpdateTaskRequest $request
+): RedirectResponse {
+    // Parameters match route structure
+}
+```
+
+### Route Parameters Don'ts
+```php
+// ❌ Don't forget to define parameters
+#[Get] // Missing parameters
+public function show(User $user)
+{
+    // Route won't work
+}
+
+// ❌ Don't mismatch parameter names
+#[Get(parameters: ['project'])]
+public function show(Project $item) // Should be $project
+{
+    // Parameter binding fails
+}
+
+// ❌ Don't use wrong parameter order
+#[Get(parameters: ['task', 'project'])] // Wrong order
+public function show(Project $project, Task $task)
+{
+    // Confusing and error-prone
+}
+
+// ❌ Don't use primitive types for models
+#[Get(parameters: ['id'])]
+public function show(int $id) // Should use model binding
+{
+    $project = Project::find($id); // Manual resolution
+}
+```
+
+## Route Customization
+
+### URI Customization Do's
+- **Keep URIs RESTful** - Follow conventions
+- **Use kebab-case** - For multi-word segments
+- **Be consistent** - Across similar resources
+- **Add context when needed** - For clarity
+- **Version APIs properly** - Use prefixes
+
+```php
+// ✅ RESTful URI customization
+#[Get(uri: '/projects/archived')]
+public function archived(): Response
+
+#[Get(uri: '/projects/trashed')]
+public function trashed(): Response
+
+#[Post(uri: '/projects/{project}/archive')]
+public function archive(Project $project): RedirectResponse
+
+// ✅ API versioning
+#[Get(uri: '/api/v1/projects')]
+public function index(): JsonResponse
+
+// ✅ Nested resource URIs
+#[Get(
+    uri: '/projects/{project}/collaborators',
+    parameters: ['project']
+)]
+public function collaborators(Project $project): Response
+
+// ✅ Action-based URIs
+#[Post(
+    uri: '/projects/{project}/duplicate',
+    parameters: ['project']
+)]
+public function duplicate(Project $project): RedirectResponse
+
+// ✅ Search/filter endpoints
+#[Get(uri: '/projects/search')]
+public function search(): Response
+```
+
+### URI Customization Don'ts
+```php
+// ❌ Don't use non-RESTful URIs
+#[Get(uri: '/get-all-projects')] // Should be /projects
+#[Post(uri: '/create-new-project')] // Should be /projects
+
+// ❌ Don't use underscores
+#[Get(uri: '/user_profile')] // Use /user-profile
+
+// ❌ Don't be inconsistent
+#[Get(uri: '/projects/archived')]
+#[Get(uri: '/trashedProjects')] // Inconsistent style
+
+// ❌ Don't nest too deeply
+#[Get(uri: '/organizations/{org}/departments/{dept}/teams/{team}/projects/{project}/tasks/{task}')]
+// Too complex, consider simplifying
+
+// ❌ Don't include file extensions
+#[Get(uri: '/projects.json')] // Use Accept header instead
+```
+
+## Middleware Application
+
+### Middleware Do's
+- **Apply via attributes** - Not in route files
+- **Use Laravel middleware** - Leverage built-in ones
+- **Create specific middleware** - For custom needs
+- **Chain middleware properly** - Order matters
+- **Use middleware parameters** - For configuration
+
+```php
+// ✅ Authentication middleware
+#[Get(middleware: ['auth'])]
+public function dashboard(): Response
+
+// ✅ Multiple middleware
+#[Post(middleware: ['auth', 'verified', 'throttle:6,1'])]
+public function store(Request $request): RedirectResponse
+
+// ✅ Authorization middleware
+#[Patch(
+    parameters: ['project'],
+    middleware: ['can:update,project']
+)]
+public function update(Project $project): RedirectResponse
+
+// ✅ Custom middleware with parameters
+#[Get(middleware: ['role:admin,manager'])]
+public function adminPanel(): Response
+
+// ✅ API middleware
+#[Get(
+    uri: '/api/projects',
+    middleware: ['auth:sanctum', 'throttle:api']
+)]
+public function apiIndex(): JsonResponse
+
+// ✅ Group middleware in controller
+class AdminController extends Controller
+{
+    protected static array $middleware = ['auth', 'admin'];
+    
+    #[Get]
+    public function index(): Response
+    {
+        // Inherits controller middleware
+    }
+}
+```
+
+### Middleware Don'ts
+```php
+// ❌ Don't apply in web.php
+Route::middleware(['auth'])->group(function () {
+    // Don't use route files
+});
+
+// ❌ Don't forget authentication
+#[Post] // Missing auth middleware
+public function store(Request $request)
+{
+    // Unprotected route
+}
+
+// ❌ Don't use wrong middleware names
+#[Get(middleware: ['authenticated'])] // Should be 'auth'
+
+// ❌ Don't apply contradicting middleware
+#[Get(middleware: ['auth', 'guest'])] // Conflicting
+
+// ❌ Don't forget API middleware
+#[Get(uri: '/api/users')] // Missing auth:sanctum
+public function apiUsers(): JsonResponse
+```
+
+## Route Prefix Configuration
+
+### Route Prefix Do's
+- **Set controller prefixes** - Group related routes
+- **Use consistent naming** - Match resource names
+- **Apply to resource controllers** - For organization
+- **Override when needed** - For special cases
+- **Document prefix usage** - In controller comments
+
+```php
+// ✅ Standard resource prefix
+class ProjectController extends Controller
+{
+    protected static string $routePrefix = 'projects';
+    
+    #[Get] // Generates /projects
+    public function index(): Response
+    
+    #[Get(parameters: ['project'])] // Generates /projects/{project}
+    public function show(Project $project): Response
+}
+
+// ✅ Nested resource prefix
+class ProjectTaskController extends Controller
+{
+    protected static string $routePrefix = 'projects.tasks';
+    
+    #[Get(parameters: ['project'])] // /projects/{project}/tasks
+    public function index(Project $project): Response
+}
+
+// ✅ Admin area prefix
+class AdminUserController extends Controller
+{
+    protected static string $routePrefix = 'admin/users';
+    
+    #[Get] // Generates /admin/users
+    public function index(): Response
+}
+
+// ✅ API prefix
+class ApiProjectController extends Controller
+{
+    protected static string $routePrefix = 'api/v1/projects';
+    
+    #[Get] // Generates /api/v1/projects
+    public function index(): JsonResponse
+}
+
+// ✅ Custom prefix with override
+class ReportController extends Controller
+{
+    protected static string $routePrefix = 'reports';
+    
+    #[Get(uri: '/dashboard/analytics')] // Overrides prefix
+    public function analytics(): Response
+}
+```
+
+### Route Prefix Don'ts
+```php
+// ❌ Don't forget prefix for resources
+class UserController extends Controller
+{
+    // Missing $routePrefix
+    
+    #[Get] // Generates /index instead of /users
+    public function index()
+}
+
+// ❌ Don't use inconsistent prefixes
+protected static string $routePrefix = 'project'; // Should be plural
+
+// ❌ Don't include leading/trailing slashes
+protected static string $routePrefix = '/projects/'; // No slashes
+
+// ❌ Don't use wrong separators for nested
+protected static string $routePrefix = 'projects/tasks'; // Use dots
+
+// ❌ Don't make prefix too complex
+protected static string $routePrefix = 'admin/management/system/users';
+```
+
+## Route Generation
+
+### Route Generation Do's
+- **Run waymaker:make regularly** - After controller changes
+- **Check generated routes** - Verify output
+- **Clear route cache** - In production
+- **Use in CI/CD** - Automate generation
+- **Version control routes** - Track changes
+
+```bash
+# ✅ Generate routes after changes
+php artisan waymaker:make
+
+# ✅ Clear and regenerate
+php artisan route:clear
+php artisan waymaker:make
+
+# ✅ View generated routes
+php artisan route:list
+
+# ✅ Filter route list
+php artisan route:list --name=project
+php artisan route:list --method=POST
+
+# ✅ Cache routes in production
+php artisan waymaker:make
+php artisan route:cache
+```
+
+```php
+// ✅ Add generation to composer scripts
+{
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan waymaker:make"
+        ]
+    }
+}
+
+// ✅ Document route changes
+/**
+ * Project management routes
+ * 
+ * Routes generated: 
+ * - GET /projects (index)
+ * - GET /projects/{project} (show)
+ * - POST /projects (store)
+ */
+class ProjectController extends Controller
+```
+
+### Route Generation Don'ts
+```bash
+# ❌ Don't forget to regenerate
+# Made controller changes but didn't run waymaker:make
+
+# ❌ Don't edit generated files
+# Changes will be lost on next generation
+
+# ❌ Don't cache during development
+php artisan route:cache # Only for production
+
+# ❌ Don't ignore route conflicts
+# Check route:list for duplicates
+```
+
+## Testing Routes
+
+### Route Testing Do's
+- **Test route generation** - Verify routes exist
+- **Test middleware** - Ensure protection
+- **Test parameters** - Model binding works
+- **Test HTTP methods** - Correct verbs
+- **Use route names** - From Controllers object
+
+```php
+// ✅ Test route exists
+public function test_project_routes_exist()
+{
+    $this->assertTrue(Route::has('projects.index'));
+    $this->assertTrue(Route::has('projects.show'));
+}
+
+// ✅ Test route protection
+public function test_authenticated_routes()
+{
+    $response = $this->get('/projects/create');
+    $response->assertRedirect('/login');
+    
+    $user = User::factory()->create();
+    $response = $this->actingAs($user)->get('/projects/create');
+    $response->assertOk();
+}
+
+// ✅ Test model binding
+public function test_show_route_binds_model()
+{
+    $project = Project::factory()->create();
+    
+    $response = $this->get("/projects/{$project->id}");
+    $response->assertOk();
+    
+    $response = $this->get("/projects/999999");
+    $response->assertNotFound();
+}
+
+// ✅ Test HTTP methods
+public function test_correct_http_methods()
+{
+    $this->get('/projects')->assertOk();
+    $this->post('/projects')->assertRedirect('/login');
+    $this->patch('/projects/1')->assertMethodNotAllowed();
+}
+```
+
+## Common Pitfalls to Avoid
+
+1. **Manual route definitions** - Always use Waymaker attributes
+2. **Forgetting parameters** - Define all route parameters
+3. **Wrong HTTP methods** - Match REST conventions
+4. **Missing middleware** - Apply authentication/authorization
+5. **Not regenerating routes** - Run waymaker:make
+6. **Hardcoding URIs** - Use Controllers object in frontend
+7. **Inconsistent prefixes** - Follow naming conventions
+8. **Deep nesting** - Keep routes simple
+9. **Missing model binding** - Use proper parameters
+10. **Ignoring route cache** - Cache in production only

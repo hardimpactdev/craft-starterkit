@@ -1,20 +1,457 @@
 ---
-description: Frontend routing with Waymaker and Inertia
-globs: ["**/resources/js/**/*.ts", "**/resources/js/**/*.vue"]
-alwaysApply: false
+description: Frontend routing with Waymaker and Inertia - comprehensive rules and patterns
+globs: ["**/resources/js/**/*.ts", "**/resources/js/**/*.vue", "**/app/Http/Controllers/**/*.php"]
+alwaysApply: true
 ---
+
+# Waymaker & Inertia Routing Rules and Best Practices
+
+## Core Principles
+
+### Do's
+- **Always use the Controllers object** - Never hardcode routes
+- **Use auto-generated routes** - Waymaker generates them automatically
+- **Follow type safety** - Leverage TypeScript for route parameters
+- **Use Inertia's Link component** - For client-side navigation
+- **Handle errors gracefully** - Account for failed navigations
+
+### Don'ts
+- **Never hardcode URLs** - No string literals for routes
+- **Don't construct paths manually** - Use Controllers object methods
+- **Avoid window.location** - Use Inertia navigation methods
+- **Don't use anchor tags** - Replace with Inertia Link components
+- **Never guess route names** - Check Controllers object
+
 ## Route Generation with Waymaker
-- Routes are **automatically generated** by Waymaker and available via the `Controllers` object.
-- Do **not** hardcode route URLs or manually construct paths.
-- Use the auto-imported `Controllers` object:
-  ```ts
-  // Navigation links
-  <Link :href="Controllers.ProjectController.index()">Projects</Link>
-  <Link :href="Controllers.ProjectController.show({ project: projectId })">View Project</Link>
-  
-  // Form submissions
-  form.post(Controllers.ProjectController.store())
-  form.patch(Controllers.ProjectController.update({ project: project.id }))
-  ```
-- Route naming follows: `Controllers.{ControllerName}.{methodName}(parameters?)`
-- Parameters are passed as objects when needed.
+
+### Using Controllers Object (Do's)
+- **Import is automatic** - Controllers object is globally available
+- **Use dot notation** - Access controllers and methods
+- **Pass parameters as objects** - Type-safe parameter passing
+- **Check method availability** - Use TypeScript autocomplete
+
+```typescript
+// ✅ Correct route usage
+import { Link } from '@inertiajs/vue3'
+
+// Simple routes without parameters
+<Link :href="Controllers.HomeController.index()">Home</Link>
+<Link :href="Controllers.AboutController.show()">About</Link>
+
+// Routes with single parameter
+<Link :href="Controllers.UserController.show({ user: userId })">
+  View Profile
+</Link>
+
+// Routes with multiple parameters
+<Link :href="Controllers.ProjectController.tasks({ 
+  project: projectId, 
+  status: 'active' 
+})">
+  Active Tasks
+</Link>
+
+// Routes with query parameters
+<Link :href="Controllers.ProductController.index({ 
+  page: 2, 
+  sort: 'price' 
+})">
+  Page 2
+</Link>
+```
+
+### Route Usage Don'ts
+```typescript
+// ❌ Never hardcode URLs
+<Link href="/projects">Projects</Link>
+<Link :href="`/projects/${projectId}`">View</Link>
+
+// ❌ Don't use string concatenation
+const url = '/api/users/' + userId
+
+// ❌ Don't use anchor tags
+<a href="/about">About</a>
+
+// ❌ Don't construct query strings manually
+<Link :href="`/products?page=${page}&sort=price`">
+
+// ❌ Don't use window.location
+window.location.href = '/dashboard'
+```
+
+## Navigation Methods
+
+### Inertia Navigation Do's
+- **Use Link for standard navigation** - Most common method
+- **Use router.visit() for programmatic navigation** - In event handlers
+- **Use appropriate HTTP methods** - GET, POST, PUT, PATCH, DELETE
+- **Handle navigation events** - Success and error callbacks
+
+```typescript
+// ✅ Link component navigation
+<Link 
+  :href="Controllers.ProjectController.show({ project: id })"
+  class="text-blue-600 hover:underline"
+>
+  View Project
+</Link>
+
+// ✅ Programmatic navigation
+import { router } from '@inertiajs/vue3'
+
+const navigateToProject = (projectId: number) => {
+  router.visit(Controllers.ProjectController.show({ project: projectId }))
+}
+
+// ✅ Navigation with options
+router.visit(Controllers.UserController.index(), {
+  preserveState: true,
+  preserveScroll: true,
+  only: ['users'],
+})
+
+// ✅ Navigation with callbacks
+router.visit(Controllers.ProjectController.show({ project: projectId }), {
+  onSuccess: () => {
+    console.log('Navigation successful!')
+  },
+  onError: (errors) => {
+    console.error('Navigation failed:', errors)
+  }
+})
+```
+
+### Navigation Don'ts
+```typescript
+// ❌ Don't use traditional navigation
+location.href = '/projects'
+location.replace('/dashboard')
+
+// ❌ Don't use Vue Router methods
+this.$router.push('/users') // Use Inertia instead
+
+// ❌ Don't reload the page unnecessarily
+window.location.reload() // Use router.reload() if needed
+
+// ❌ Don't navigate without error handling
+router.post(url, data) // Add error callbacks
+```
+
+## Form Handling
+
+For all form-related patterns including form initialization, submission, validation, and error handling, please refer to the dedicated **Forms.mdc** file in this directory.
+
+Key points covered in Forms.mdc:
+- Form initialization from DTOs
+- Using `form.submit()` with Controllers
+- Validation error handling
+- Form state management
+- Complex form patterns
+
+### Quick Reference
+```typescript
+// Form setup (see Forms.mdc for details)
+const form = useForm(props.resource)
+
+// Form submission (see Forms.mdc for details)
+form.submit(Controllers.UserController.store(), {
+  onSuccess: () => { /* ... */ }
+})
+```
+
+## Route Parameters
+
+### Parameter Passing Do's
+- **Use object syntax** - Type-safe parameter passing
+- **Match parameter names** - Use exact names from routes
+- **Handle optional parameters** - Use TypeScript optional properties
+- **Validate parameters** - Ensure correct types
+
+```typescript
+// ✅ Single parameter
+Controllers.UserController.show({ user: 123 })
+Controllers.PostController.edit({ post: postId })
+
+// ✅ Multiple parameters
+Controllers.CommentController.show({ 
+  post: postId, 
+  comment: commentId 
+})
+
+// ✅ Optional parameters
+type RouteParams = {
+  page?: number
+  sort?: 'asc' | 'desc'
+  filter?: string
+}
+
+Controllers.ProductController.index({ 
+  page: 2, 
+  sort: 'asc' 
+})
+
+// ✅ Complex parameter types
+Controllers.ReportController.generate({
+  startDate: '2024-01-01',
+  endDate: '2024-12-31',
+  format: 'pdf',
+  include: ['sales', 'inventory']
+})
+```
+
+### Parameter Passing Don'ts
+```typescript
+// ❌ Don't use positional parameters
+Controllers.UserController.show(123) // Use object
+
+// ❌ Don't use wrong parameter names
+Controllers.PostController.show({ id: postId }) // Should be 'post'
+
+// ❌ Don't pass wrong types
+Controllers.UserController.show({ user: '123' }) // Should be number
+
+// ❌ Don't forget required parameters
+Controllers.CommentController.show({ post: postId }) // Missing comment
+
+// ❌ Don't construct URLs manually
+`/posts/${postId}/comments/${commentId}` // Use Controllers
+```
+
+## Link Component Advanced Usage
+
+### Link Component Do's
+- **Use method attribute** - For non-GET requests
+- **Preserve scroll position** - When appropriate
+- **Handle active states** - Style current page links
+- **Use Inertia events** - For loading states
+
+```typescript
+// ✅ Non-GET methods
+<Link 
+  :href="Controllers.ProjectController.destroy({ project: id })"
+  method="delete"
+  as="button"
+  class="text-red-600"
+>
+  Delete
+</Link>
+
+// ✅ Preserve states
+<Link 
+  :href="Controllers.ProductController.index({ page: 2 })"
+  preserve-scroll
+  preserve-state
+>
+  Next Page
+</Link>
+
+// ✅ Active link styling
+<Link 
+  :href="Controllers.DashboardController.index()"
+  :class="{
+    'font-bold text-blue-600': $page.component === 'Dashboard/Index'
+  }"
+>
+  Dashboard
+</Link>
+
+// ✅ Custom headers and data
+<Link 
+  :href="Controllers.NotificationController.markRead({ notification: id })"
+  method="patch"
+  :headers="{ 'X-Custom-Header': 'value' }"
+  :data="{ read_at: new Date().toISOString() }"
+>
+  Mark as Read
+</Link>
+```
+
+### Link Component Don'ts
+```typescript
+// ❌ Don't use onClick for navigation
+<Link @click="navigate">Click me</Link>
+
+// ❌ Don't wrap in unnecessary elements
+<div @click="handleClick">
+  <Link :href="url">Click the div!</Link>
+</div>
+
+// ❌ Don't use Link for non-navigation
+<Link @click.prevent="openModal">Open Modal</Link>
+
+// ❌ Don't forget method for mutations
+<Link :href="deleteUrl">Delete</Link> // Should specify method="delete"
+```
+
+## Shared Data and Props
+
+### Accessing Shared Data Do's
+- **Use usePage()** - Access shared Inertia data
+- **Type your shared data** - Define interfaces
+- **Access auth data properly** - Use shared auth object
+- **Handle nullable data** - Account for logged-out state
+
+```typescript
+// ✅ Define shared data types
+type SharedData = {
+  auth: {
+    user: {
+      id: number
+      name: string
+      email: string
+    } | null
+  }
+  flash: {
+    success?: string
+    error?: string
+  }
+  app: {
+    name: string
+    version: string
+  }
+}
+
+// ✅ Access shared data
+import { usePage } from '@inertiajs/vue3'
+
+const page = usePage<SharedData>()
+const user = computed(() => page.props.auth.user)
+const appName = computed(() => page.props.app.name)
+
+// ✅ Use in templates
+<div v-if="user">
+  Welcome, {{ user.name }}!
+</div>
+
+// ✅ Flash messages
+<div v-if="page.props.flash.success" class="alert-success">
+  {{ page.props.flash.success }}
+</div>
+```
+
+### Shared Data Don'ts
+```typescript
+// ❌ Don't access without null checks
+const userName = page.props.auth.user.name // Could be null
+
+// ❌ Don't mutate shared data
+page.props.auth.user.name = 'New Name' // Props are readonly
+
+// ❌ Don't use $page in script
+const user = $page.props.auth.user // Use usePage()
+
+// ❌ Don't assume data exists
+const setting = page.props.settings.theme // settings might not exist
+```
+
+## Error Handling
+
+### Error Handling Do's
+- **Handle 404s gracefully** - Show appropriate messages
+- **Display validation errors** - See Forms.mdc for form error handling
+- **Handle session timeouts** - Redirect to login
+- **Show loading states** - During navigation
+
+```typescript
+// ✅ Global error handling
+import { router } from '@inertiajs/vue3'
+
+router.on('error', (event) => {
+  if (event.detail.errors.status === 404) {
+    console.error('Page not found')
+  }
+})
+
+// ✅ Navigation error handling
+router.visit(url, {
+  onError: (errors) => {
+    if (errors.response?.status === 403) {
+      alert('You do not have permission')
+    }
+  }
+})
+
+// ✅ Loading states during navigation
+router.on('start', () => {
+  // Show loading indicator
+})
+
+router.on('finish', () => {
+  // Hide loading indicator
+})
+```
+
+### Error Handling Don'ts
+```typescript
+// ❌ Don't ignore navigation errors
+router.visit(url) // No error handling
+
+// ❌ Don't use generic error messages
+catch (e) {
+  alert('Error!') // Be specific
+}
+
+// ❌ Don't handle errors in templates only
+<div v-if="error">Error occurred</div> // Handle in script too
+
+// ❌ Don't forget user feedback
+router.visit(url) // User doesn't know what happened
+```
+
+**Note:** For form-specific error handling and validation display patterns, see **Forms.mdc**.
+
+## Testing Considerations
+
+### Testing Do's
+- **Mock Controllers object** - For unit tests
+- **Test navigation calls** - Verify correct routes
+- **Use Inertia test helpers** - Built-in testing utilities
+
+```typescript
+// ✅ Mock Controllers in tests
+global.Controllers = {
+  UserController: {
+    show: jest.fn((params) => `/users/${params.user}`),
+    index: jest.fn(() => '/users')
+  }
+}
+
+// ✅ Test navigation
+expect(Controllers.UserController.show).toHaveBeenCalledWith({ user: 123 })
+
+// ✅ Test router navigation
+const mockVisit = jest.fn()
+router.visit = mockVisit
+// Trigger navigation
+expect(mockVisit).toHaveBeenCalledWith(
+  Controllers.UserController.index(),
+  expect.any(Object)
+)
+```
+
+**Note:** For form submission testing patterns, see **Forms.mdc**.
+
+### Testing Don'ts
+```typescript
+// ❌ Don't test hardcoded URLs
+expect(wrapper.find('a').attributes('href')).toBe('/users')
+
+// ❌ Don't skip navigation testing
+// Just testing that a button exists isn't enough
+
+// ❌ Don't forget to reset mocks
+// Controllers object should be reset between tests
+```
+
+## Common Pitfalls to Avoid
+
+1. **Hardcoding URLs** - Always use Controllers object
+2. **Using anchor tags** - Replace with Link components
+3. **Wrong HTTP methods** - Match controller expectations
+4. **Missing error handling** - Always handle failures
+5. **Ignoring TypeScript** - Leverage type safety for routes
+6. **Using form.post/patch/delete** - See Forms.mdc for proper form handling
+7. **Using window.location** - Use Inertia navigation
+8. **Forgetting loading states** - Show progress to users
+9. **Not preserving state** - Consider preserve options
+10. **Mutating shared props** - Props are readonly
