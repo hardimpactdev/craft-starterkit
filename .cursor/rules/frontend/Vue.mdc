@@ -9,6 +9,7 @@ alwaysApply: yes
 ## Core Principles
 
 ### Do's
+
 - **Always use Composition API** - Leverage `<script setup>` syntax for cleaner, more maintainable code
 - **Use TypeScript** - Always include `lang="ts"` in script blocks for type safety
 - **Prefer declarative patterns** - Write reactive, declarative code over imperative solutions
@@ -16,6 +17,7 @@ alwaysApply: yes
 - **Keep templates clean** - Move complex logic to the script section
 
 ### Don'ts
+
 - **Never use Options API** - Avoid `export default { data(), methods(), ... }` pattern
 - **Don't mix paradigms** - Never combine Options API with Composition API
 - **Avoid inline complex logic** - Don't write complex expressions in templates
@@ -24,6 +26,7 @@ alwaysApply: yes
 ## Component File Structure
 
 ### Required Order (Do's)
+
 1. **Script block first**: `<script setup lang="ts">` at the top
 2. **Template second**: `<template>` block after script
 3. **No styles**: Rely on Tailwind CSS classes exclusively
@@ -35,23 +38,30 @@ alwaysApply: yes
 </script>
 
 <template>
-  <div class="tailwind-classes">
-    <!-- Content -->
-  </div>
+    <div class="tailwind-classes">
+        <!-- Content -->
+    </div>
 </template>
 ```
 
 ### Structure Don'ts
+
 ```vue
 <!-- ❌ Wrong order -->
 <template>...</template>
-<script setup>...</script>
+<script setup>
+...
+</script>
 
 <!-- ❌ No TypeScript -->
-<script setup>...</script>
+<script setup>
+...
+</script>
 
 <!-- ❌ Using styles -->
-<style scoped>...</style>
+<style scoped>
+...
+</style>
 
 <!-- ❌ Missing script block -->
 <template>...</template>
@@ -60,6 +70,7 @@ alwaysApply: yes
 ## State Management
 
 ### Reactive State Do's
+
 - **Use `reactive` for component state** - Group related state in reactive objects
 - **Use `ref` for DOM elements** - Reserve ref for template refs and primitives
 - **Use `computed` for derived state** - Prefer computed over watchers
@@ -68,50 +79,55 @@ alwaysApply: yes
 ```typescript
 // ✅ Good state management
 const props = defineProps<{
-  title: string
-  count: number
-}>()
+    title: string;
+    count: number;
+}>();
 
 const state = reactive({
-  isOpen: false,
-  items: [] as Item[],
-  selectedId: null as number | null
-})
+    isOpen: false,
+    items: [] as Item[],
+    selectedId: null as number | null,
+});
 
-const itemCount = computed(() => state.items.length)
-const selectedItem = computed(() => 
-  state.items.find(item => item.id === state.selectedId)
-)
+const itemCount = computed(() => state.items.length);
+const selectedItem = computed(() =>
+    state.items.find((item) => item.id === state.selectedId),
+);
 
 // DOM refs
-const inputRef = ref<HTMLInputElement>()
+const inputRef = ref<HTMLInputElement>();
 ```
 
 ### State Management Don'ts
+
 ```typescript
 // ❌ Don't use ref for complex state
 const state = ref({
-  isOpen: false,
-  items: []
-})
+    isOpen: false,
+    items: [],
+});
 
 // ❌ Don't use multiple refs when reactive would be better
-const isOpen = ref(false)
-const items = ref([])
-const selectedId = ref(null)
+const isOpen = ref(false);
+const items = ref([]);
+const selectedId = ref(null);
 
 // ❌ Don't use watchers for derived state
-watch(() => state.items, (newItems) => {
-  itemCount.value = newItems.length // Use computed instead
-})
+watch(
+    () => state.items,
+    (newItems) => {
+        itemCount.value = newItems.length; // Use computed instead
+    },
+);
 
 // ❌ Don't access props directly without binding
-defineProps<Props>() // Missing const props =
+defineProps<Props>(); // Missing const props =
 ```
 
 ## Props and Events
 
 ### Props Do's
+
 - **Define TypeScript interfaces** - Always type your props
 - **Use `defineProps` with generics** - Leverage TypeScript for prop validation
 - **Provide defaults when needed** - Use `withDefaults` for optional props
@@ -119,37 +135,39 @@ defineProps<Props>() // Missing const props =
 ```typescript
 // ✅ Well-typed props
 interface Props {
-  title: string
-  count?: number
-  variant?: 'primary' | 'secondary'
+    title: string;
+    count?: number;
+    variant?: "primary" | "secondary";
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  count: 0,
-  variant: 'primary'
-})
+    count: 0,
+    variant: "primary",
+});
 ```
 
 ### Props Don'ts
+
 ```typescript
 // ❌ Don't use runtime validation when TypeScript suffices
 defineProps({
-  title: {
-    type: String,
-    required: true
-  }
-})
+    title: {
+        type: String,
+        required: true,
+    },
+});
 
 // ❌ Don't forget to bind props
-defineProps<Props>() // Should be: const props = defineProps<Props>()
+defineProps<Props>(); // Should be: const props = defineProps<Props>()
 
 // ❌ Don't mutate props
-props.title = 'New Title' // Props are readonly
+props.title = "New Title"; // Props are readonly
 ```
 
 ## Events and Emits
 
 ### Emits Do's
+
 - **Type your emits** - Use TypeScript to define emit signatures
 - **Use descriptive event names** - Follow kebab-case convention
 - **Document complex payloads** - Add comments for non-obvious emit data
@@ -157,23 +175,24 @@ props.title = 'New Title' // Props are readonly
 ```typescript
 // ✅ Well-typed emits
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
-  'item-selected': [item: Item]
-  'close': []
-}>()
+    "update:modelValue": [value: string];
+    "item-selected": [item: Item];
+    close: [];
+}>();
 
 // Usage
-emit('update:modelValue', newValue)
-emit('item-selected', selectedItem)
+emit("update:modelValue", newValue);
+emit("item-selected", selectedItem);
 ```
 
 ### Emits Don't's
+
 ```typescript
 // ❌ Don't use untyped emits
-const emit = defineEmits(['update', 'select'])
+const emit = defineEmits(["update", "select"]);
 
 // ❌ Don't use unclear event names
-emit('change', data) // Too generic
+emit("change", data); // Too generic
 
 // ❌ Don't forget the emit declaration
 // Just calling emit() without defineEmits
@@ -182,6 +201,7 @@ emit('change', data) // Too generic
 ## Template Best Practices
 
 ### Template Do's
+
 - **Use semantic HTML** - Choose appropriate HTML elements
 - **Leverage v-if/v-else-if/v-else** - For conditional rendering
 - **Use v-show for toggles** - When elements are frequently toggled
@@ -190,31 +210,26 @@ emit('change', data) // Too generic
 ```vue
 <!-- ✅ Good template practices -->
 <template>
-  <article class="p-4">
-    <h2 class="text-xl font-bold">{{ props.title }}</h2>
-    
-    <ul v-if="state.items.length > 0" class="mt-4">
-      <li 
-        v-for="item in state.items" 
-        :key="item.id"
-        class="py-2"
-      >
-        {{ item.name }}
-      </li>
-    </ul>
-    
-    <p v-else class="text-gray-500">
-      No items available
-    </p>
-    
-    <dialog v-show="state.isOpen" class="fixed inset-0">
-      <!-- Frequently toggled content -->
-    </dialog>
-  </article>
+    <article class="p-4">
+        <h2 class="text-xl font-bold">{{ props.title }}</h2>
+
+        <ul v-if="state.items.length > 0" class="mt-4">
+            <li v-for="item in state.items" :key="item.id" class="py-2">
+                {{ item.name }}
+            </li>
+        </ul>
+
+        <p v-else class="text-gray-500">No items available</p>
+
+        <dialog v-show="state.isOpen" class="fixed inset-0">
+            <!-- Frequently toggled content -->
+        </dialog>
+    </article>
 </template>
 ```
 
 ### Template Don'ts
+
 ```vue
 <!-- ❌ Avoid these patterns -->
 <template>
@@ -222,16 +237,16 @@ emit('change', data) // Too generic
   <div>
     <div>{{ title }}</div>
   </div>
-  
+
   <!-- Don't forget keys in loops -->
   <li v-for="item in items">{{ item }}</li>
-  
+
   <!-- Don't use v-if in v-for on same element -->
   <li v-for="item in items" v-if="item.active">
-  
+
   <!-- Don't add unnecessary IDs or data attributes -->
   <div id="my-component" data-name="component">
-  
+
   <!-- Don't use arbitrary Tailwind values -->
   <div class="w-[397px]"> <!-- Use w-96 or similar -->
 </template>
@@ -240,6 +255,7 @@ emit('change', data) // Too generic
 ## Styling Rules
 
 ### Styling Do's
+
 - **Use Tailwind utility classes** - Exclusively for all styling
 - **Use standard Tailwind values** - Prefer `w-32` over `w-[128px]`
 - **Follow Tailwind conventions** - Use proper class order and variants
@@ -247,31 +263,31 @@ emit('change', data) // Too generic
 
 ```vue
 <!-- ✅ Good Tailwind usage -->
-<button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+<button
+    class="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+>
   Click me
 </button>
 ```
 
 ### Styling Don'ts
+
 ```vue
 <!-- ❌ Never use these -->
 <style scoped>
-.my-button { background: blue; }
+.my-button {
+    background: blue;
+}
 </style>
 
 <!-- ❌ Don't use inline styles -->
-<div :style="{ color: 'red' }">
-
-<!-- ❌ Don't use arbitrary values when standard ones exist -->
-<div class="w-[200px] h-[200px]"> <!-- Use w-48 h-48 -->
-
-<!-- ❌ Don't use style bindings -->
-<div :class="dynamicStyles">
+<div :style="{ color: 'red' }"></div>
 ```
 
 ## Composables and Logic Extraction
 
 ### Composables Do's
+
 - **Prefix with 'use'** - Follow naming convention (e.g., `useCounter`)
 - **Return reactive values** - Ensure reactivity is preserved
 - **Accept options object** - For flexible configuration
@@ -280,22 +296,23 @@ emit('change', data) // Too generic
 ```typescript
 // ✅ Well-structured composable
 export function useCounter(options?: { initial?: number }) {
-  const count = ref(options?.initial ?? 0)
-  
-  const increment = () => count.value++
-  const decrement = () => count.value--
-  const reset = () => count.value = options?.initial ?? 0
-  
-  return {
-    count: readonly(count),
-    increment,
-    decrement,
-    reset
-  }
+    const count = ref(options?.initial ?? 0);
+
+    const increment = () => count.value++;
+    const decrement = () => count.value--;
+    const reset = () => (count.value = options?.initial ?? 0);
+
+    return {
+        count: readonly(count),
+        increment,
+        decrement,
+        reset,
+    };
 }
 ```
 
 ### Composables Don'ts
+
 ```typescript
 // ❌ Don't break naming conventions
 export function counterLogic() { // Should be useCounter
@@ -315,6 +332,7 @@ export function useInterval() {
 ## Performance Optimization
 
 ### Performance Do's
+
 - **Use `v-once` for static content** - Render once and skip updates
 - **Leverage `v-memo` for expensive lists** - Memoize based on dependencies
 - **Lazy load components** - Use dynamic imports for code splitting
@@ -322,7 +340,7 @@ export function useInterval() {
 
 ```typescript
 // ✅ Optimized patterns
-const AsyncComponent = defineAsyncComponent(() => 
+const AsyncComponent = defineAsyncComponent(() =>
   import('./HeavyComponent.vue')
 )
 
@@ -336,6 +354,7 @@ const largeData = shallowReactive({
 ```
 
 ### Performance Don'ts
+
 ```typescript
 // ❌ Don't make everything reactive
 const state = reactive({
@@ -353,12 +372,14 @@ import HeavyComponent from './HeavyComponent.vue' // Use async
 ## Testing Considerations
 
 ### Testing Do's
+
 - **Export composables separately** - Make logic testable
 - **Use `data-testid` sparingly** - Only when necessary for tests
 - **Keep components pure** - Minimize side effects
 - **Mock external dependencies** - Don't rely on external services
 
 ### Testing Don'ts
+
 - **Don't add IDs just for testing** - Use other selectors when possible
 - **Don't test implementation details** - Focus on behavior
 - **Don't make components too large** - Hard to test effectively

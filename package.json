@@ -10,24 +10,20 @@
         "oxlint": "bunx oxlint@latest --fix --fix-suggestions"
     },
     "devDependencies": {
-        "@tailwindcss/vite": "^4.0.0",
-        "axios": "^1.8.2",
+        "@tailwindcss/vite": "^4.1.11",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^1.2.0",
         "prettier": "^3.4.2",
         "prettier-plugin-organize-imports": "^4.1.0",
         "prettier-plugin-tailwindcss": "^0.6.9",
-        "tailwindcss": "^4.0.0",
-        "vite": "^6.0.11",
+        "tailwindcss": "^4.1.11",
+        "vite": "^7.0.0",
         "vite-plugin-run": "^0.6.1"
     },
     "dependencies": {
-        "@headlessui/vue": "^1.7.23",
+        "@hardimpactdev/liftoff-vue": "^0.0.3",
         "@inertiajs/vue3": "^2.0.7",
-        "@hardimpactdev/liftoff-ui": "^0.0.1",
-        "@tailwindcss/forms": "^0.5.3",
         "@types/node": "^22.10.2",
-        "@types/ziggy-js": "^1.3.3",
         "@vitejs/plugin-vue": "^5.2.1",
         "@vueuse/core": "^12.0.0",
         "class-variance-authority": "^0.7.1",
@@ -36,11 +32,10 @@
         "nprogress": "^0.2.0",
         "reka-ui": "^2.2.1",
         "tailwind-merge": "^3.2.0",
-        "typescript": "^5.2.2",
+        "typescript": "^5.8.3",
         "unplugin-auto-import": "^19.1.2",
         "unplugin-vue-components": "^28.4.1",
-        "vue": "^3.5.13",
-        "vue-tsc": "^2.2.0"
+        "vue": "^3.5.13"
     },
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "4.9.5",

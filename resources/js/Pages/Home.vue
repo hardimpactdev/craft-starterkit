@@ -2,5 +2,5 @@
 
 <template>
     <Head title="Home" />
-    <Link :href="Controllers.HomeController.show()">Home</Link>
+    <Link :href="HomeController.show()">Home</Link>
 </template>

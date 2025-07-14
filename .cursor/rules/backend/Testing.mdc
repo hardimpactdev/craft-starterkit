@@ -1,13 +1,442 @@
 ---
-description: Testing guidelines using Pest
-globs: ["**/tests/**/*.php"]
-alwaysApply: false
+name: pest-testing
+description: Best practices and rules for testing with Pest PHP v2
+globs: ["**/tests/**/*.php", "**/tests/Pest.php"]
+tags:
+    - testing
+    - pest
+    - laravel
+    - php
 ---
-## Testing
-- This project uses **Pest** for testing.
-- Each new feature must include **Pest tests**, including **controller tests**.
-- Do **not** delete tests.
-- Do **not** modify unrelated tests.
-- If a test fails:
-  - Propose the required changes.
-  - Get confirmation before modifying the test.
+
+# Pest PHP v2 Testing Rules and Best Practices
+
+## Core Principles
+
+- **Always use Pest v2 syntax** - Leverage the latest features and improvements
+- **Write tests that read like specifications** - Tests should be self-documenting
+- **Prefer fluent expectations over assertions** - Use Pest's chainable API
+- **Group related tests logically** - Use `describe()` blocks for organization
+- **Never delete or modify unrelated tests** - Maintain test suite integrity
+
+## Setup and Configuration
+
+### Installation Requirements
+
+- **PHP 8.2+** is required for Pest v2
+- **Always install with Laravel plugin** for Laravel projects
+- **Use --with-all-dependencies flag** to avoid conflicts
+
+```bash
+# ✅ Correct installation
+composer require pestphp/pest --dev --with-all-dependencies
+composer require pestphp/pest-plugin-laravel --dev
+php artisan pest:install
+
+# ❌ Don't install without dependencies flag
+composer require pestphp/pest --dev
+```
+
+### Directory Structure
+
+```
+tests/
+├── Architecture/     # Architectural tests
+├── Feature/         # Application workflow tests
+├── Unit/           # Isolated component tests
+├── Datasets/       # Shared datasets
+└── Pest.php        # Global configuration
+```
+
+## Test Writing Guidelines
+
+### Function Usage
+
+```php
+# ✅ DO use Pest functions
+it('creates a user', function () {
+    // test implementation
+});
+
+test('validates email', function () {
+    // test implementation
+});
+
+# ❌ DON'T use PHPUnit classes
+class UserTest extends TestCase {
+    public function test_creates_user() {
+        // avoid this pattern
+    }
+}
+```
+
+### Test Naming
+
+```php
+# ✅ DO write descriptive test names
+it('sends welcome email when user registers')
+test('throws exception when payment fails')
+it('redirects to login when unauthenticated')
+
+# ❌ DON'T use generic or unclear names
+it('works')
+test('test1')
+it('user test')
+```
+
+### Test Organization
+
+```php
+# ✅ DO use describe blocks for grouping
+describe('UserController', function () {
+    beforeEach(function () {
+        $this->user = User::factory()->create();
+    });
+
+    it('shows user profile', function () {
+        // test
+    });
+
+    it('updates user settings', function () {
+        // test
+    });
+});
+
+# ❌ DON'T scatter related tests
+test('user can view profile', function () {});
+// ... other unrelated tests ...
+test('user can update profile', function () {});
+```
+
+## Expectations vs Assertions
+
+### Always Prefer Expectations
+
+```php
+# ✅ DO use Pest expectations
+expect($value)->toBe(5);
+expect($user)->toBeInstanceOf(User::class);
+expect($array)->toContain('item');
+expect($string)->toStartWith('Hello');
+
+# ❌ DON'T use PHPUnit assertions
+$this->assertEquals(5, $value);
+$this->assertInstanceOf(User::class, $user);
+$this->assertContains('item', $array);
+```
+
+### Chaining Expectations
+
+```php
+# ✅ DO chain related expectations
+expect($response)
+    ->toBeArray()
+    ->toHaveCount(3)
+    ->toContain('success')
+    ->each->toBeString();
+
+# ❌ DON'T use separate expectations unnecessarily
+expect($response)->toBeArray();
+expect($response)->toHaveCount(3);
+expect($response)->toContain('success');
+```
+
+### Negation Patterns
+
+```php
+# ✅ DO use the not modifier
+expect($value)->not->toBe(null);
+expect($array)->not->toBeEmpty();
+expect($user->email)->not->toContain('spam');
+
+# ❌ DON'T use negative assertion methods
+$this->assertNotNull($value);
+$this->assertNotEmpty($array);
+```
+
+## Laravel-Specific Testing
+
+### Helper Functions
+
+```php
+# ✅ DO use Laravel helper functions
+use function Pest\Laravel\{actingAs, get, post, assertDatabaseHas};
+
+actingAs($user)->get('/profile')->assertOk();
+assertDatabaseHas('posts', ['title' => 'Test']);
+
+# ❌ DON'T use $this methods when helpers are available
+$this->actingAs($user)->get('/profile')->assertOk();
+$this->assertDatabaseHas('posts', ['title' => 'Test']);
+```
+
+### Database Testing
+
+```php
+# ✅ DO use RefreshDatabase trait appropriately
+uses(RefreshDatabase::class)->in('Feature');
+
+# ✅ DO use in-memory databases for speed
+// phpunit.xml
+<env name="DB_CONNECTION" value="sqlite"/>
+<env name="DB_DATABASE" value=":memory:"/>
+
+# ❌ DON'T use production database for tests
+# ❌ DON'T forget to refresh database between tests
+```
+
+### FormRequest Validation
+
+```php
+# ✅ DO test validation comprehensively with datasets
+test('validates registration', function ($field, $value, $error) {
+    $data = validUserData();
+    $data[$field] = $value;
+
+    postJson('/register', $data)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors([$field => $error]);
+})->with([
+    'missing name' => ['name', '', 'The name field is required.'],
+    'invalid email' => ['email', 'not-an-email', 'The email must be a valid email address.'],
+]);
+
+# ❌ DON'T test only happy path
+# ❌ DON'T hardcode validation messages
+```
+
+## Advanced Features
+
+### Datasets
+
+```php
+# ✅ DO use named datasets for clarity
+it('handles user roles', function ($role, $canPublish) {
+    // test
+})->with([
+    'admin can publish' => ['admin', true],
+    'editor can publish' => ['editor', true],
+    'viewer cannot publish' => ['viewer', false],
+]);
+
+# ✅ DO create shared datasets
+// tests/Datasets/users.php
+dataset('user_roles', ['admin', 'editor', 'viewer']);
+
+# ❌ DON'T use unnamed array datasets
+->with([['admin', true], ['editor', true], ['viewer', false]]);
+```
+
+### Coverage and Mutation Testing
+
+```php
+# ✅ DO use covers() for targeted testing
+covers(UserController::class);
+
+# ✅ DO run mutation tests on critical code
+pest --mutate --parallel --min=80
+
+# ❌ DON'T rely only on code coverage percentage
+# ❌ DON'T skip mutation testing for business logic
+```
+
+### Architecture Testing
+
+```php
+# ✅ DO use architecture presets
+arch()->preset()->laravel();
+arch()->preset()->security();
+arch()->preset()->strict();
+
+# ✅ DO create custom architecture rules
+arch('models extend eloquent')
+    ->expect('App\Models')
+    ->toExtend('Illuminate\Database\Eloquent\Model');
+
+# ❌ DON'T ignore architecture violations
+# ❌ DON'T disable presets without good reason
+```
+
+## Performance Optimization
+
+### Parallel Testing
+
+```php
+# ✅ DO use parallel testing for faster execution
+pest --parallel
+pest --parallel --processes=4
+
+# ✅ DO configure for CI/CD
+// GitHub Actions
+run: vendor/bin/pest --parallel --processes=2
+
+# ❌ DON'T use parallel with shared state
+# ❌ DON'T forget to configure test databases for parallel runs
+```
+
+### Database Optimization
+
+```php
+# ✅ DO optimize test database configuration
+// phpunit.xml
+<env name="BCRYPT_ROUNDS" value="4"/>
+<env name="CACHE_DRIVER" value="array"/>
+<env name="SESSION_DRIVER" value="array"/>
+
+# ❌ DON'T use production-level bcrypt rounds
+# ❌ DON'T use file-based drivers in tests
+```
+
+## Custom Expectations
+
+### Creating Custom Expectations
+
+```php
+# ✅ DO create domain-specific expectations
+// tests/Pest.php
+expect()->extend('toBeValidUuid', function () {
+    return $this->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i');
+});
+
+expect()->extend('toBeWithinBusinessHours', function () {
+    $hour = (int) $this->value->format('H');
+    return $this->toBeBetween(9, 17);
+});
+
+# ❌ DON'T create overly complex custom expectations
+# ❌ DON'T duplicate existing expectation functionality
+```
+
+## Mock and Test Doubles
+
+### Mocking Best Practices
+
+```php
+# ✅ DO use Mockery for test doubles
+$mailer = Mockery::mock(Mailer::class);
+$mailer->shouldReceive('send')->once()->andReturn(true);
+
+# ✅ DO use spies for verification after execution
+Cache::spy();
+// ... code execution ...
+Cache::shouldHaveReceived('put')->once();
+
+# ❌ DON'T over-mock - test behavior, not implementation
+# ❌ DON'T forget to verify mock expectations
+```
+
+## API Testing
+
+### Request Testing
+
+```php
+# ✅ DO test API responses thoroughly
+test('api returns user data', function () {
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->getJson('/api/user')
+        ->assertOk()
+        ->assertJsonStructure([
+            'data' => ['id', 'name', 'email', 'created_at']
+        ])
+        ->assertJson([
+            'data' => ['id' => $user->id]
+        ]);
+});
+
+# ❌ DON'T test only status codes
+# ❌ DON'T ignore response structure validation
+```
+
+### Authentication Testing
+
+```php
+# ✅ DO test authentication scenarios
+test('unauthenticated users cannot access protected routes', function () {
+    get('/api/profile')->assertUnauthorized();
+});
+
+test('authenticated users can access protected routes', function () {
+    actingAs(User::factory()->create())
+        ->get('/api/profile')
+        ->assertOk();
+});
+
+# ❌ DON'T skip authentication tests
+# ❌ DON'T test only happy path authentication
+```
+
+## Common Pitfalls to Avoid
+
+1. **Never use sleep() in tests** - Use proper waiting mechanisms
+2. **Don't test Laravel internals** - Focus on your application code
+3. **Avoid brittle selectors** - Use data-testid attributes
+4. **Don't share state between tests** - Each test should be independent
+5. **Never hardcode IDs or timestamps** - Use factories and relative assertions
+6. **Don't ignore flaky tests** - Fix them immediately
+7. **Avoid testing implementation details** - Test behavior and outcomes
+8. **Don't write tests after the fact** - Use TDD when possible
+9. **Never commit commented-out tests** - Remove or fix them
+10. **Don't use production credentials** - Always use test configuration
+
+## Team Management Features
+
+### Test Annotations
+
+```php
+# ✅ DO use team management features for coordination
+test('complex payment flow', function () {
+    // implementation
+})->todo()
+   ->assignee('john.doe')
+   ->issue(123)
+   ->pr(456)
+   ->note('Waiting for payment gateway API update');
+
+# ❌ DON'T leave todos without assignees
+# ❌ DON'T forget to remove todo() when complete
+```
+
+## Migration from PHPUnit
+
+### Gradual Migration
+
+```php
+# ✅ DO migrate incrementally
+// Start with new tests in Pest
+it('new feature works', function () {
+    // Pest test
+});
+
+// Keep existing PHPUnit tests temporarily
+class LegacyTest extends TestCase {
+    // Existing tests
+}
+
+# ❌ DON'T migrate everything at once
+# ❌ DON'T break working tests during migration
+```
+
+## Test Maintenance
+
+### When Tests Fail
+
+1. **Understand why the test is failing** - Read error messages carefully
+2. **Determine if it's a test issue or code issue** - Debug systematically
+3. **If code changed legitimately** - Update test to match new behavior
+4. **If test reveals a bug** - Fix the code, not the test
+5. **Document any test changes** - Explain why in commit messages
+
+### Test Review Checklist
+
+- [ ] Test name clearly describes what is being tested
+- [ ] Test has proper setup and teardown
+- [ ] Expectations are specific and meaningful
+- [ ] Test data uses factories, not hardcoded values
+- [ ] No unnecessary database queries
+- [ ] Proper use of mocks for external dependencies
+- [ ] Test runs quickly (< 100ms for unit tests)
+- [ ] Test is independent of other tests
+- [ ] Coverage includes edge cases and error paths
+- [ ] No commented-out code or skip() without explanation

@@ -1,3 +1,3 @@
-import { defineLiftoffConfig } from "./vite.config.liftoff";
+import { defineLiftoffConfig } from '@hardimpactdev/liftoff-vue/vite';
 
 export default defineLiftoffConfig();

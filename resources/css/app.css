@@ -1,7 +1,7 @@
-@import "tailwindcss";
-@import "../../node_modules/@hardimpactdev/liftoff-ui/dist/liftoff-ui.css";
-@import "./theme.css";
-@import "./nprogress.css";
+@import 'tailwindcss';
+@import '../../node_modules/@hardimpactdev/liftoff-vue/dist/liftoff-vue.css';
+@import './theme.css';
+@import './nprogress.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';

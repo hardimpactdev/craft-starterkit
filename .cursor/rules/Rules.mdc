@@ -3,6 +3,7 @@ description: Main rules index and technology stack overview
 globs: []
 alwaysApply: true
 ---
+
 # HardImpact Project Rules Index
 
 ## Technology Stack Overview
@@ -10,6 +11,7 @@ alwaysApply: true
 This project is built with the following technologies:
 
 ### Backend
+
 - **PHP 8.4** with **Laravel** framework
 - **Waymaker** for automatic route generation
 - **Spatie Laravel Data** for DTOs and data transformation
@@ -18,15 +20,17 @@ This project is built with the following technologies:
 - **Larastan** for static analysis (level 9)
 
 ### Frontend
+
 - **Vue 3** with Composition API and TypeScript
 - **Inertia.js** for server-driven client-side routing
 - **Tailwind CSS v4** for styling
-- **Liftoff-UI** component library
+- **liftoff-vue** component library
 - **VueUse** for composables
 - **Vite** for building
 - Auto-imports configured for Vue, Inertia, and components
 
 ### Database
+
 - **PostgreSQL** as primary database
 - **Redis** for caching and queues
 - Eloquent ORM for database interactions
@@ -36,6 +40,7 @@ This project is built with the following technologies:
 The rules are organized into backend and frontend categories for better maintainability:
 
 ### Backend Rules (`/backend/`)
+
 1. **General.mdc** - PHP conventions, Laravel patterns, security, static analysis
 2. **Database.mdc** - Eloquent models, migrations, factories, seeders
 3. **Routes.mdc** - Waymaker routing system, controller patterns, Inertia responses
@@ -43,16 +48,18 @@ The rules are organized into backend and frontend categories for better maintain
 5. **Testing.mdc** - Pest testing guidelines
 
 ### Frontend Rules (`/frontend/`)
+
 1. **TypeScript.mdc** - TypeScript conventions, code style, naming patterns
 2. **Vue.mdc** - Vue 3 Composition API patterns, component structure, optimization
 3. **AutoImports.mdc** - Auto-import configuration, component usage guidelines
 4. **Routing.mdc** - Frontend routing with Waymaker Controllers object
 5. **Forms.mdc** - Form handling with Inertia and DTOs
-6. **LiftoffUI.mdc** - Liftoff-UI component library usage and best practices
+6. **LiftoffUI.mdc** - liftoff-vue component library usage and best practices
 
 ## Quick Reference Guide
 
 ### When working on backend features:
+
 - Start with **General.mdc** for overall conventions
 - Check **Routes.mdc** for controller and routing patterns
 - Review **Validation.mdc** for FormRequest and DTO usage
@@ -60,6 +67,7 @@ The rules are organized into backend and frontend categories for better maintain
 - Follow **Testing.mdc** for writing tests
 
 ### When working on frontend features:
+
 - Begin with **Vue.mdc** for component structure
 - Check **AutoImports.mdc** before importing anything
 - Use **LiftoffUI.mdc** for UI component guidance
@@ -67,6 +75,7 @@ The rules are organized into backend and frontend categories for better maintain
 - Consult **Forms.mdc** for form handling
 
 ### Key Principles
+
 1. **Don't fight the framework** - Use established patterns
 2. **Backend drives navigation** - Configure in HandleInertiaRequests
 3. **DTOs everywhere** - No plain arrays or inline validation
@@ -76,13 +85,16 @@ The rules are organized into backend and frontend categories for better maintain
 7. **Test everything** - Features must include Pest tests
 
 ### Common Workflows
+
 - **Adding a new feature**: Routes.mdc → Validation.mdc → Vue.mdc → Testing.mdc
 - **Creating a new page**: Routes.mdc → LiftoffUI.mdc → Forms.mdc
 - **Working with forms**: Validation.mdc → Forms.mdc → AutoImports.mdc
 - **UI implementation**: LiftoffUI.mdc → Vue.mdc → TypeScript.mdc
 
 ## Editor Integration (Cursor)
+
 These MDC files are designed for Cursor AI editor. Each file has:
+
 - **description**: What the file covers
 - **globs**: File patterns where rules apply
 - **alwaysApply**: Whether rules always apply or only to matching files

@@ -1,1 +1,1 @@
-This directory should only contain DTO's. See `/.cursor/rules/Backend/DTOs.mdc` for all rules related to DTO's.
+This directory should only contain DTO's. See `/.cursor/rules/backend/DTOs.mdc` for all rules related to DTO's.
