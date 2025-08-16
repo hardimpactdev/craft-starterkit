@@ -1,2 +1,2 @@
 [install.scopes]
-"@hardimpactdev" = { token = "$NPM_TOKEN_LIFTOFF_UI", url = "https://npm.pkg.github.com/" }
+"@hardimpactdev" = { token = "$GITHUB_TOKEN", url = "https://npm.pkg.github.com/" }
