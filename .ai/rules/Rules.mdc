@@ -1,102 +1,127 @@
 ---
-description: Main rules index and technology stack overview
-globs: []
+description: Main rules index - READ THIS FIRST
 alwaysApply: true
 ---
 
-# HardImpact Project Rules Index
+# Project Rules Index
 
-## Technology Stack Overview
+## CRITICAL: Rule Usage Order
+1. Check this index for overview
+2. Navigate to specific rule category
+3. Cross-reference related rules
+4. Use development tools as needed
 
-This project is built with the following technologies:
+## Technology Stack
 
-### Backend
+### Versions (EXACT - Use for tool queries)
+- **php**: 8.4.11
+- **laravel/framework**: v12
+- **inertiajs/inertia-laravel**: v2
+- **@inertiajs/vue3**: v2
+- **vue**: v3
+- **tailwindcss**: v4
+- **pestphp/pest**: v3
+- **laravel/pint**: v1
+- **larastan/larastan**: v3
 
-- **PHP 8.4** with **Laravel** framework
-- **Waymaker** for automatic route generation
-- **Spatie Laravel Data** for DTOs and data transformation
-- **Laravel Inertia** for SPA-like experience
-- **Pest** for testing
-- **Larastan** for static analysis (level 9)
+### Architecture
+- **Backend**: Laravel 12 with Waymaker routing
+- **Frontend**: Vue 3 + Inertia.js v2 SPA
+- **Styling**: Tailwind CSS v4
+- **Testing**: Pest v3
+- **Analysis**: Larastan level 9
 
-### Frontend
+## Rule Categories
 
-- **Vue 3** with Composition API and TypeScript
-- **Inertia.js** for server-driven client-side routing
-- **Tailwind CSS v4** for styling
-- **liftoff-vue** component library
-- **VueUse** for composables
-- **Vite** for building
-- Auto-imports configured for Vue, Inertia, and components
+### Backend (`./backend/`)
+| File | Purpose | Key Rules |
+|------|---------|-----------|
+| General.mdc | PHP & Laravel core | PHP 8.4, Laravel 12 structure, conventions |
+| Controllers.mdc | Controller patterns | Resourceful methods, Inertia rendering |
+| Routes.mdc | Waymaker routing | NO manual routes, use attributes |
+| FormRequests.mdc | Validation | ALWAYS use with DTOs, never inline |
+| Models.mdc | Eloquent models | Final classes, factories, relationships |
+| Database.mdc | Migrations | Schema design, seeders |
+| DTOs.mdc | Data Transfer | Spatie Laravel Data patterns |
+| Enums.mdc | Database enums | String-backed, TitleCase keys |
+| Middleware.mdc | Middleware | Registration, patterns |
+| Testing.mdc | Pest tests | REQUIRED for all features |
 
-### Database
+### Frontend (`./frontend/`)
+| File | Purpose | Key Rules |
+|------|---------|-----------|
+| Vue.mdc | Vue 3 patterns | Composition API, TypeScript |
+| Inertia.mdc | Inertia.js v2 | Navigation, forms, deferred props |
+| TypeScript.mdc | Type safety | Interfaces, props, strict mode |
+| LiftoffUI.mdc | UI library | @hardimpactdev/liftoff-vue components |
+| Tailwind.mdc | CSS styling | v4 syntax, NO deprecated utilities |
+| AutoImports.mdc | Auto-imports | DON'T manually import listed items |
+| Routing.mdc | Frontend routes | Use Controllers object |
+| Forms.mdc | Form handling | DTOs from backend |
 
-- **PostgreSQL** as primary database
-- **Redis** for caching and queues
-- Eloquent ORM for database interactions
+### Development Tools (`./development/`)
+| File | Purpose | Key Tools |
+|------|----------|-----------|
+| laravel-boost.mdc | MCP server | search-docs, tinker, database tools |
+| herd.mdc | Local server | Site management, PHP versions |
+| pint.mdc | Code format | Run before commits |
 
-## Rule Files Organization
+## Critical Rules (MEMORIZE)
 
-The rules are organized into backend and frontend categories for better maintainability:
+### NEVER DO
+- ❌ Edit web.php manually (use Waymaker)
+- ❌ Inline validation (use FormRequest)
+- ❌ Hardcode URLs (use Controllers object)
+- ❌ Skip tests (Pest required)
+- ❌ Use Options API (Composition only)
+- ❌ Create custom layouts (use AppLayout)
+- ❌ Use deprecated Tailwind utilities
 
-### Backend Rules (`/backend/`)
+### ALWAYS DO
+- ✅ Check existing components first
+- ✅ Use Laravel Boost search-docs
+- ✅ Run composer analyse
+- ✅ Run vendor/bin/pint --dirty
+- ✅ Use FormRequest with DTOs
+- ✅ Write Pest tests
+- ✅ Follow sibling file patterns
 
-1. **General.mdc** - PHP conventions, Laravel patterns, security, static analysis
-2. **Database.mdc** - Eloquent models, migrations, factories, seeders
-3. **Routes.mdc** - Waymaker routing system, controller patterns, Inertia responses
-4. **Validation.mdc** - FormRequest patterns, DTO usage, validation rules
-5. **Testing.mdc** - Pest testing guidelines
+## Quick Reference
 
-### Frontend Rules (`/frontend/`)
+### Commands
+```bash
+php artisan waymaker:generate  # After controller changes
+composer analyse               # Static analysis
+php artisan test              # Run tests
+vendor/bin/pint --dirty       # Format code
+npm run build                 # Build frontend
+```
 
-1. **TypeScript.mdc** - TypeScript conventions, code style, naming patterns
-2. **Vue.mdc** - Vue 3 Composition API patterns, component structure, optimization
-3. **AutoImports.mdc** - Auto-import configuration, component usage guidelines
-4. **Routing.mdc** - Frontend routing with Waymaker Controllers object
-5. **Forms.mdc** - Form handling with Inertia and DTOs
-6. **LiftoffUI.mdc** - liftoff-vue component library usage and best practices
+### Laravel Boost Tools
+- `application-info` - Run at chat start
+- `search-docs` - Use before implementing
+- `get-absolute-url` - For sharing URLs
+- `list-artisan-commands` - Check options
 
-## Quick Reference Guide
+## Cross-References
 
-### When working on backend features:
+### When working on:
+- **Controllers** → Check Routes.mdc, FormRequests.mdc, Inertia.mdc
+- **Models** → Check Database.mdc, DTOs.mdc, Testing.mdc
+- **Vue components** → Check Inertia.mdc, TypeScript.mdc, LiftoffUI.mdc
+- **Forms** → Check FormRequests.mdc, DTOs.mdc, Forms.mdc
+- **Tests** → Check Testing.mdc, run existing tests first
 
-- Start with **General.mdc** for overall conventions
-- Check **Routes.mdc** for controller and routing patterns
-- Review **Validation.mdc** for FormRequest and DTO usage
-- Consult **Database.mdc** for model-related work
-- Follow **Testing.mdc** for writing tests
+## Priority Override
+1. User explicit instruction (current session)
+2. Project CLAUDE.md files
+3. These .ai/rules
+4. Framework defaults
 
-### When working on frontend features:
-
-- Begin with **Vue.mdc** for component structure
-- Check **AutoImports.mdc** before importing anything
-- Use **LiftoffUI.mdc** for UI component guidance
-- Follow **Routing.mdc** for navigation patterns
-- Consult **Forms.mdc** for form handling
-
-### Key Principles
-
-1. **Don't fight the framework** - Use established patterns
-2. **Backend drives navigation** - Configure in HandleInertiaRequests
-3. **DTOs everywhere** - No plain arrays or inline validation
-4. **Auto-imports first** - Check before manual imports
-5. **Waymaker for routes** - Never hardcode URLs
-6. **AppLayout is complete** - Don't wrap it in custom layouts
-7. **Test everything** - Features must include Pest tests
-
-### Common Workflows
-
-- **Adding a new feature**: Routes.mdc → Validation.mdc → Vue.mdc → Testing.mdc
-- **Creating a new page**: Routes.mdc → LiftoffUI.mdc → Forms.mdc
-- **Working with forms**: Validation.mdc → Forms.mdc → AutoImports.mdc
-- **UI implementation**: LiftoffUI.mdc → Vue.mdc → TypeScript.mdc
-
-## Editor Integration (Cursor)
-
-These MDC files are designed for Cursor AI editor. Each file has:
-
-- **description**: What the file covers
-- **globs**: File patterns where rules apply
-- **alwaysApply**: Whether rules always apply or only to matching files
-
-The rules help maintain consistency and guide AI assistants in following project conventions.
+## File Patterns
+- Controllers: PascalCase, plural for resources
+- Models: PascalCase, singular
+- Vue: PascalCase components in Pages/
+- DTOs: suffix with Data
+- Enums: TitleCase keys
+- Tests: describe feature being tested

@@ -3,7 +3,9 @@
     "allow": [
       "WebSearch",
       "Bash(mv:*)",
-      "Bash(ln:*)"
+      "Bash(ln:*)",
+      "Bash(mkdir:*)",
+      "Bash(rm:*)"
     ],
     "defaultMode": "acceptEdits"
   },

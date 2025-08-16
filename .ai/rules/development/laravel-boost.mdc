@@ -1,0 +1,119 @@
+---
+description: Laravel Boost MCP server tools and documentation search
+alwaysApply: true
+---
+
+# Laravel Boost MCP Server
+
+## Overview
+Laravel Boost is an MCP (Model Context Protocol) server providing AI-optimized tools for Laravel development. Use these tools to interact with the application, debug code, and access version-specific documentation.
+
+## Core Tools
+
+### Documentation Search
+**CRITICAL**: Always use `search-docs` before other documentation approaches for Laravel ecosystem packages.
+
+```
+Tool: mcp__laravel-boost__search-docs
+Purpose: Version-specific documentation for installed packages
+Coverage: Laravel, Inertia, Livewire, Filament, Tailwind, Pest, Nova, etc.
+```
+
+#### Search Strategy
+- Use multiple broad queries: `['rate limiting', 'routing', 'middleware']`
+- Avoid package names in queries (automatically included)
+- Pass package filter array when targeting specific packages
+
+### Database Tools
+
+```
+Tool: mcp__laravel-boost__database-schema
+Purpose: Read complete database schema with relationships
+
+Tool: mcp__laravel-boost__database-query
+Purpose: Execute read-only SQL queries
+
+Tool: mcp__laravel-boost__database-connections
+Purpose: List configured database connections
+```
+
+### Application Introspection
+
+```
+Tool: mcp__laravel-boost__application-info
+Purpose: Get PHP/Laravel versions, installed packages, Eloquent models
+Usage: Run on each new chat for version context
+
+Tool: mcp__laravel-boost__get-config
+Purpose: Read configuration values using dot notation
+
+Tool: mcp__laravel-boost__list-available-config-keys
+Purpose: List all available config keys
+
+Tool: mcp__laravel-boost__list-available-env-vars
+Purpose: List environment variables from .env files
+```
+
+### Debugging & Development
+
+```
+Tool: mcp__laravel-boost__tinker
+Purpose: Execute PHP code in Laravel context (like artisan tinker)
+Usage: Debug issues, check functions, test snippets
+
+Tool: mcp__laravel-boost__last-error
+Purpose: Get last backend error/exception details
+
+Tool: mcp__laravel-boost__browser-logs
+Purpose: Read browser console logs for frontend debugging
+
+Tool: mcp__laravel-boost__read-log-entries
+Purpose: Read application log entries (PSR-3 formatted)
+```
+
+### Artisan & Routes
+
+```
+Tool: mcp__laravel-boost__list-artisan-commands
+Purpose: List all registered Artisan commands with parameters
+
+Tool: mcp__laravel-boost__list-routes
+Purpose: List all application routes including Folio routes
+
+Tool: mcp__laravel-boost__get-absolute-url
+Purpose: Generate absolute URLs for paths/routes
+```
+
+### User Feedback
+
+```
+Tool: mcp__laravel-boost__report-feedback
+Purpose: Report user feedback about Boost or Laravel ecosystem
+```
+
+## Usage Guidelines
+
+### Project Initialization
+1. Run `application-info` on new chats for version context
+2. Check database schema when working with models
+3. List routes to understand application structure
+
+### URL Generation
+Always use `get-absolute-url` when sharing URLs to ensure correct scheme/domain/port.
+
+### Debugging Workflow
+1. Backend errors: Use `last-error` tool
+2. Frontend errors: Use `browser-logs` tool
+3. Test code snippets: Use `tinker` tool
+4. Database queries: Use `database-query` for reads only
+
+### Documentation Search
+1. Search before implementing to ensure correct approach
+2. Use version-specific results from Boost API
+3. Filter by package when targeting specific functionality
+
+## Integration with Other Rules
+- See `.ai/rules/backend/General.mdc` for PHP conventions
+- See `.ai/rules/backend/Testing.mdc` for Pest testing
+- See `.ai/rules/development/herd.mdc` for local server setup
+- See `.ai/rules/Rules.mdc` for complete stack overview
