@@ -13,6 +13,7 @@ This project uses comprehensive AI-assisted development rules located in `.ai/ru
 ### Core Categories
 - **Backend Rules** (`.ai/rules/backend/`)
   - General.mdc - PHP & Laravel conventions
+  - Actions.mdc - Business logic encapsulation (Action pattern)
   - Controllers.mdc - Controller patterns with Inertia
   - Routes.mdc - Waymaker routing (NO manual routes!)
   - FormRequests.mdc - Validation with DTOs
@@ -54,6 +55,7 @@ This project uses comprehensive AI-assisted development rules located in `.ai/ru
 - Use Waymaker attributes (`#[Get]`, `#[Post]`) - NEVER edit web.php
 - Always use FormRequest with DTOs - NEVER inline validation
 - Only resourceful controller methods (index, show, create, store, edit, update, destroy)
+- Use Actions for business logic - `final readonly` classes with `handle()` method
 - Models must be final classes with factories and seeders
 - Every feature MUST include Pest tests
 
