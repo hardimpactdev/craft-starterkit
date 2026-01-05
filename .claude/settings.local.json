@@ -12,6 +12,7 @@
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "laravel-boost",
-    "herd"
+    "laravel-toolbar",
+    "playwright"
   ]
 }

@@ -10,15 +10,15 @@
     "repositories": [
         {
             "type": "path",
-            "url": "../../packages/waymaker"
+            "url": "../waymaker"
         },
         {
             "type": "path",
-            "url": "../../liftoff/laravel"
+            "url": "../liftoff-laravel"
         },
         {
             "type": "path",
-            "url": "../../packages/laravel-telescope-toolbar"
+            "url": "../laravel-toolbar"
         }
     ],
     "license": "MIT",
@@ -37,7 +37,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "fruitcake/laravel-telescope-toolbar": "@dev",
+        "nckrtl/laravel-toolbar": "@dev",
         "larastan/larastan": "^3.0",
         "laravel/boost": "^1.0",
         "laravel/pail": "^1.2.2",

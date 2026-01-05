@@ -7,14 +7,18 @@
                 "boost:mcp"
             ]
         },
-        "herd": {
+        "laravel-toolbar": {
             "command": "php",
             "args": [
-                "/Applications/Herd.app/Contents/Resources/herd-mcp.phar"
-            ],
-            "env": {
-                "SITE_PATH": "/Users/nckrtl/Projects/hardimpact/apps/liftoff-starterkit"
-            }
+                "./artisan",
+                "toolbar:mcp"
+            ]
+        },
+        "playwright": {
+            "command": "npx",
+            "args": [
+                "@anthropic-ai/mcp-playwright"
+            ]
         }
     }
 }

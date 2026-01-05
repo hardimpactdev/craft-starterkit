@@ -9,7 +9,7 @@ return [
      * any class that extends `Spatie\Csp\Preset`
      */
     'presets' => [
-        \Spatie\Csp\Presets\Basic::class,
+        \App\Support\Csp\Presets\Basic::class,
         \App\Support\Csp\Presets\Development::class,
     ],
 
@@ -59,5 +59,5 @@ return [
      * and cannot add inline nonces.
      * Note that this will make your CSP policy less secure.
      */
-    'nonce_enabled' => env('CSP_NONCE_ENABLED', true),
+    'nonce_enabled' => env('CSP_NONCE_ENABLED', env('APP_ENV') !== 'local'),
 ];

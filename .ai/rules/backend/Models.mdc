@@ -1,6 +1,0 @@
----
-description: Models
-globs: ["/app/Models/**/*.php"]
-alwaysApply: false
----
-Work in progress
