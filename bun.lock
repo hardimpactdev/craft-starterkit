@@ -4,7 +4,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@hardimpactdev/liftoff-vue": "^0.0.45",
+        "@hardimpactdev/liftoff-vue": "^0.0.46",
         "@inertiajs/vue3": "^2.3.7",
         "@vitejs/plugin-vue": "^6.0.3",
         "@vueuse/core": "^14.1.0",
@@ -169,7 +169,7 @@
 
     "@floating-ui/vue": ["@floating-ui/vue@1.1.7", "", { "dependencies": { "@floating-ui/dom": "^1.7.2", "@floating-ui/utils": "^0.2.10", "vue-demi": ">=0.13.0" } }, "sha512-idmAtbAIigGXN2SI5gItiXYBYtNfDTP9yIiObxgu13dgtG7ARCHlNfnR29GxP4LI4o13oiwsJ8wVgghj1lNqcw=="],
 
-    "@hardimpactdev/liftoff-vue": ["@hardimpactdev/liftoff-vue@0.0.45", "https://npm.pkg.github.com/download/@hardimpactdev/liftoff-vue/0.0.45/2d2f456d24aa4fbdb24acba80d5358773dead80c", { "dependencies": { "@iconify/vue": "^5.0.0", "@inertiajs/core": "^2.3.6", "@inertiajs/vue3": "^2.0.0", "@nuxt/ui": "^4.3.0", "@tailwindcss/vite": "^4.0.0", "@tanstack/vue-table": "^8.21.3", "@types/node": "^25.0.3", "@vee-validate/zod": "^4.15.1", "@vueuse/core": "^14.1.0", "chart.js": "^4.5.1", "clsx": "^2.1.1", "laravel-vite-plugin": "^2.0.1", "laravel-vue-i18n": "^2.8.0", "lucide-vue-next": "^0.562.0", "tailwind-merge": "^3.4.0", "tailwindcss": "^4.1.18", "tw-animate-css": "^1.4.0", "vee-validate": "^4.15.1", "vite-plugin-vue-devtools": "^8.0.5", "vue": "^3.5.0", "vue-chartjs": "^5.3.3", "zod": "^4.3.4" }, "peerDependencies": { "unplugin-auto-import": "^20.2.0", "unplugin-vue-components": "^29.1.0", "vite-plugin-run": "^0.6.1" } }, "sha512-KYD9pwF5KB56zOal5n14X8KshoEwnHUMj1w8i48VPwqdj1SXCp4hIzhz+qvzE8qcLsk74uWo/GaPKd3ZJMX6gg=="],
+    "@hardimpactdev/liftoff-vue": ["@hardimpactdev/liftoff-vue@0.0.46", "https://npm.pkg.github.com/download/@hardimpactdev/liftoff-vue/0.0.46/05fd69ef2129c67badc7efe88f7c37afa2626bee", { "dependencies": { "@iconify/vue": "^5.0.0", "@inertiajs/core": "^2.3.6", "@inertiajs/vue3": "^2.0.0", "@nuxt/ui": "^4.3.0", "@tailwindcss/vite": "^4.0.0", "@tanstack/vue-table": "^8.21.3", "@types/node": "^25.0.3", "@vee-validate/zod": "^4.15.1", "@vueuse/core": "^14.1.0", "chart.js": "^4.5.1", "clsx": "^2.1.1", "laravel-vite-plugin": "^2.0.1", "laravel-vue-i18n": "^2.8.0", "lucide-vue-next": "^0.562.0", "tailwind-merge": "^3.4.0", "tailwindcss": "^4.1.18", "tw-animate-css": "^1.4.0", "vee-validate": "^4.15.1", "vite-plugin-vue-devtools": "^8.0.5", "vue": "^3.5.0", "vue-chartjs": "^5.3.3", "zod": "^4.3.4" }, "peerDependencies": { "unplugin-auto-import": "^20.2.0", "unplugin-vue-components": "^29.1.0", "vite-plugin-run": "^0.6.1" } }, "sha512-0pCyzb/aL9bqyqpLj4HU3lxjJNwiWcbIReyxX3AW+xcip/5ghTuKZyhE1epexsESrsu0oKkI4dV3qsTBqxybMA=="],
 
     "@iconify/collections": ["@iconify/collections@1.0.636", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-rfHaZuA60MeAbylEGv8lzSYN0x/LvYj7B8h7JYlhSWgozox7VkNO+S/PcLfVcseNSzOzj1GChfUw1xwsh+XFiw=="],
 
