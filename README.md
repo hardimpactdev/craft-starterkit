@@ -14,7 +14,7 @@ This template project is based off the official [liftoff-starter-kit](https://gi
 - Laravel CSP, for applying and managing content security policies
 - Laravel Data, for the use of DTO's
 - Laravel typescript transformer for making DTO's and enums available in Vue
-- Laravel Telescope + toolbar, for debugging purposes
+- Laravel toolbar, for debugging purposes
 - Larastan, for static analysis
 - Whisky, for setting up git hooks
 - Route maker, for managing your routes from your controllers

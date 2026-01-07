@@ -16,7 +16,7 @@ class GenerateAndSetCspNonce
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (request()->is('telescope*', 'horizon*')) {
+        if (request()->is('horizon*')) {
             config(['csp.enabled' => false]);
 
             return $next($request);
