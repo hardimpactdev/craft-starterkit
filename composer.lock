@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "535a4676efb37639940bc7e00324b703",
+    "content-hash": "8f998fbb24503eb1b2a794e675ef9f5d",
     "packages": [
         {
             "name": "brick/math",
@@ -8310,16 +8310,16 @@
         },
         {
             "name": "nckrtl/laravel-toolbar",
-            "version": "v0.0.8",
+            "version": "v0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nckrtl/laravel-toolbar.git",
-                "reference": "36226e37f4977c741e524873a4aad9711176896f"
+                "reference": "a56de9136306f286b38d16c75120196a4feb6519"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nckrtl/laravel-toolbar/zipball/36226e37f4977c741e524873a4aad9711176896f",
-                "reference": "36226e37f4977c741e524873a4aad9711176896f",
+                "url": "https://api.github.com/repos/nckrtl/laravel-toolbar/zipball/a56de9136306f286b38d16c75120196a4feb6519",
+                "reference": "a56de9136306f286b38d16c75120196a4feb6519",
                 "shasum": ""
             },
             "require": {
@@ -8383,7 +8383,7 @@
             ],
             "support": {
                 "issues": "https://github.com/nckrtl/laravel-toolbar/issues",
-                "source": "https://github.com/nckrtl/laravel-toolbar/tree/v0.0.8"
+                "source": "https://github.com/nckrtl/laravel-toolbar/tree/v0.1.0"
             },
             "funding": [
                 {
@@ -8391,7 +8391,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-01-07T13:30:21+00:00"
+            "time": "2026-01-08T10:45:38+00:00"
         },
         {
             "name": "nunomaduro/collision",
@@ -10978,7 +10978,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.5"
+        "php": "^8.4"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"
