@@ -43,15 +43,6 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Configure npm registry for GitHub Packages
-        run: |
-          # Configure in both home and project directory for bun compatibility
-          echo "@hardimpactdev:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_PAT }}" >> ~/.npmrc
-          # Also add to project .npmrc for bun
-          echo "@hardimpactdev:registry=https://npm.pkg.github.com" >> .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_PAT }}" >> .npmrc
-
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT

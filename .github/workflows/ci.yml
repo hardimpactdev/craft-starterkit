@@ -37,11 +37,6 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
-      - name: Configure npm registry for GitHub Packages
-        run: |
-          echo "@hardimpactdev:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_PAT }}" >> ~/.npmrc
-
       - name: Install Composer dependencies
         env:
           COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_PAT }}"}}'
