@@ -17,8 +17,6 @@ export function defineLiftoffConfig(options: viteConfigOptions = {}) {
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
-import autoimport from 'unplugin-auto-import/vite';
-import components from 'unplugin-vue-components/vite';
 import { run } from 'vite-plugin-run';
 import i18n from 'laravel-vue-i18n/vite';
 import { liftoff } from '@hardimpactdev/liftoff-vue';
@@ -42,8 +40,6 @@ export function pluginConfiguration() {
             },
         }),
         runConfiguration(),
-        autoimportConfiguration(),
-        componentsConfiguration(),
     ];
 }
 
@@ -67,46 +63,6 @@ function runConfiguration() {
     ]);
 }
 
-function autoimportConfiguration() {
-    return autoimport({
-        vueTemplate: true,
-        include: [
-            /\.vue$/,
-            /\.vue\?vue/, // .vue
-        ],
-        dts: './resources/js/types/auto-imports.d.ts',
-        imports: [
-            'vue',
-            '@vueuse/core',
-            {
-                '@inertiajs/vue3': ['router', 'useForm', 'usePage', 'Link'],
-            },
-            {
-                '@livtoff/ui': ['__'],
-            },
-        ],
-        dirs: ['./resources/js', './resources/js/actions/App/Http/Controllers/index.ts'],
-    });
-}
-
-function componentsConfiguration() {
-    return components({
-        dirs: ['resources/js/components', 'resources/js/layouts'],
-        dts: 'resources/js/types/components.d.ts',
-        resolvers: [
-            (name: string) => {
-                const components = ['Link', 'Head'];
-
-                if (components.includes(name)) {
-                    return {
-                        name: name,
-                        from: '@inertiajs/vue3',
-                    };
-                }
-            },
-        ],
-    });
-}
 
 interface LocalAlias {
     regex: RegExp;
