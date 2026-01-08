@@ -23,6 +23,10 @@ jobs:
       composer_changes: ${{ steps.check_changes.outputs.composer_changes }}
       npm_changes: ${{ steps.check_changes.outputs.npm_changes }}
       new_version: ${{ steps.create_release.outputs.new_version }}
+      security_alerts_before: ${{ steps.check_alerts_before.outputs.alert_count }}
+      security_alerts_after: ${{ steps.check_alerts_after.outputs.alert_count }}
+      security_alerts_fixed: ${{ steps.check_alerts_after.outputs.alerts_fixed }}
+      security_alerts_summary: ${{ steps.check_alerts_after.outputs.summary }}
 
     steps:
       - name: Checkout
@@ -31,6 +35,42 @@ jobs:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
+
+      - name: Check Dependabot alerts (before upgrade)
+        id: check_alerts_before
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "### Security Alerts (Before Upgrade)" >> $GITHUB_STEP_SUMMARY
+
+          # Fetch open Dependabot alerts
+          ALERTS=$(gh api repos/${{ github.repository }}/dependabot/alerts --jq '[.[] | select(.state == "open")]' 2>/dev/null || echo "[]")
+
+          ALERT_COUNT=$(echo "$ALERTS" | jq 'length')
+          echo "Found $ALERT_COUNT open Dependabot security alerts"
+          echo "alert_count=$ALERT_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$ALERT_COUNT" -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Package | Vulnerability | CVE |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|---------|---------------|-----|" >> $GITHUB_STEP_SUMMARY
+
+            # Save alerts to file for later comparison
+            echo "$ALERTS" > /tmp/alerts_before.json
+
+            # Parse and display each alert
+            echo "$ALERTS" | jq -r '.[] | "| \(.security_advisory.severity // "unknown") | \(.security_vulnerability.package.name) | \(.security_advisory.summary // "N/A") | \(.security_advisory.cve_id // "N/A") |"' >> $GITHUB_STEP_SUMMARY
+
+            # Also save package names for comparison
+            echo "$ALERTS" | jq -r '.[].security_vulnerability.package.name' | sort -u > /tmp/vulnerable_packages_before.txt
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Total open alerts: $ALERT_COUNT**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "_No open Dependabot security alerts_" >> $GITHUB_STEP_SUMMARY
+            echo "[]" > /tmp/alerts_before.json
+            touch /tmp/vulnerable_packages_before.txt
+          fi
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -246,6 +286,75 @@ jobs:
           echo "composer_changes=$COMPOSER_CHANGED" >> $GITHUB_OUTPUT
           echo "npm_changes=$NPM_CHANGED" >> $GITHUB_OUTPUT
 
+      - name: Check Dependabot alerts (after upgrade)
+        id: check_alerts_after
+        if: steps.check_changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Security Alerts (After Upgrade)" >> $GITHUB_STEP_SUMMARY
+
+          # Get the alerts we recorded before
+          BEFORE_COUNT=$(cat /tmp/alerts_before.json | jq 'length')
+          BEFORE_PACKAGES=$(cat /tmp/vulnerable_packages_before.txt 2>/dev/null || echo "")
+
+          # Check which packages were upgraded
+          UPGRADED_COMPOSER=""
+          UPGRADED_NPM=""
+
+          if [ "${{ steps.check_changes.outputs.composer_changes }}" = "true" ]; then
+            # Get list of changed composer packages
+            UPGRADED_COMPOSER=$(git diff composer.lock 2>/dev/null | grep '"name":' | sed 's/.*"name": "\([^"]*\)".*/\1/' | sort -u || true)
+          fi
+
+          if [ "${{ steps.check_changes.outputs.npm_changes }}" = "true" ]; then
+            # Get list of changed npm packages
+            UPGRADED_NPM=$(git diff package.json 2>/dev/null | grep -E '^\+.*":' | grep -v '"private"\|"type"\|"scripts"' | sed 's/.*"\([^"]*\)": ".*/\1/' | sort -u || true)
+          fi
+
+          # Determine which vulnerable packages may have been fixed
+          POTENTIALLY_FIXED=""
+          FIXED_COUNT=0
+
+          if [ -n "$BEFORE_PACKAGES" ]; then
+            while IFS= read -r pkg; do
+              [ -z "$pkg" ] && continue
+              # Check if this package was upgraded
+              if echo "$UPGRADED_COMPOSER $UPGRADED_NPM" | grep -q "$pkg"; then
+                POTENTIALLY_FIXED="${POTENTIALLY_FIXED}${pkg}\n"
+                FIXED_COUNT=$((FIXED_COUNT + 1))
+              fi
+            done <<< "$BEFORE_PACKAGES"
+          fi
+
+          echo "alert_count=$BEFORE_COUNT" >> $GITHUB_OUTPUT
+          echo "alerts_fixed=$FIXED_COUNT" >> $GITHUB_OUTPUT
+
+          # Build summary
+          SUMMARY=""
+          if [ "$BEFORE_COUNT" -gt 0 ]; then
+            if [ "$FIXED_COUNT" -gt 0 ]; then
+              SUMMARY="$FIXED_COUNT of $BEFORE_COUNT security alerts may be resolved by this upgrade"
+              echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Potentially fixed packages:**" >> $GITHUB_STEP_SUMMARY
+              echo -e "$POTENTIALLY_FIXED" | while read -r pkg; do
+                [ -n "$pkg" ] && echo "- \`$pkg\`" >> $GITHUB_STEP_SUMMARY
+              done
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "_Note: Dependabot will automatically close fixed alerts after the commit is pushed._" >> $GITHUB_STEP_SUMMARY
+            else
+              SUMMARY="$BEFORE_COUNT security alerts remain (upgraded packages do not address them)"
+              echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            SUMMARY="No security alerts"
+            echo "_No security alerts to address_" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+
       - name: Commit and push changes
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
@@ -266,11 +375,17 @@ jobs:
             git add package.json bun.lock
           fi
 
+          # Add security info if applicable
+          SECURITY_INFO=""
+          if [ "${{ steps.check_alerts_before.outputs.alert_count }}" != "0" ] && [ -n "${{ steps.check_alerts_before.outputs.alert_count }}" ]; then
+            SECURITY_INFO="\n\nSecurity: ${{ steps.check_alerts_after.outputs.summary }}"
+          fi
+
           git commit -m "$COMMIT_MSG
 
           Automated weekly upgrade including major version upgrades where compatible.
 
-          Changes:$(echo -e "$COMMIT_BODY")
+          Changes:$(echo -e "$COMMIT_BODY")$(echo -e "$SECURITY_INFO")
 
           All tests passed:
           - Setup commands (app, cms)
@@ -319,6 +434,21 @@ jobs:
           if [ "${{ steps.check_changes.outputs.npm_changes }}" = "true" ]; then
             RELEASE_NOTES="${RELEASE_NOTES}
           - npm dependencies upgraded to latest versions"
+          fi
+
+          # Add security alert info if present
+          ALERTS_BEFORE="${{ steps.check_alerts_before.outputs.alert_count }}"
+          ALERTS_FIXED="${{ steps.check_alerts_after.outputs.alerts_fixed }}"
+
+          if [ "$ALERTS_BEFORE" != "0" ] && [ -n "$ALERTS_BEFORE" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}
+
+          ### Security
+          - **Open alerts before upgrade:** $ALERTS_BEFORE"
+            if [ "$ALERTS_FIXED" != "0" ] && [ -n "$ALERTS_FIXED" ]; then
+              RELEASE_NOTES="${RELEASE_NOTES}
+          - **Potentially resolved:** $ALERTS_FIXED"
+            fi
           fi
 
           RELEASE_NOTES="${RELEASE_NOTES}
@@ -382,6 +512,13 @@ jobs:
                   "text": {
                     "type": "mrkdwn",
                     "text": "*Tests Passed:*\n- Setup commands (app, cms)\n- Frontend build\n- Homepage rendering\n- Playwright tests"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Security:* ${{ needs.upgrade-and-test.outputs.security_alerts_summary || 'No security alerts' }}"
                   }
                 },
                 {
