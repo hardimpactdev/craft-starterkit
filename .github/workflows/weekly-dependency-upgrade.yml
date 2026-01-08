@@ -22,6 +22,7 @@ jobs:
       has_changes: ${{ steps.check_changes.outputs.has_changes }}
       composer_changes: ${{ steps.check_changes.outputs.composer_changes }}
       npm_changes: ${{ steps.check_changes.outputs.npm_changes }}
+      new_version: ${{ steps.create_release.outputs.new_version }}
 
     steps:
       - name: Checkout
@@ -272,6 +273,67 @@ jobs:
 
           git push origin main
 
+      - name: Create release
+        id: create_release
+        if: steps.check_changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+
+          # Parse version numbers (remove 'v' prefix if present)
+          VERSION=${LATEST_TAG#v}
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+          echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Build release notes
+          RELEASE_NOTES="## Weekly Dependency Upgrade
+
+          Automated dependency upgrade performed on $(date +%Y-%m-%d).
+
+          ### Changes"
+
+          if [ "${{ steps.check_changes.outputs.composer_changes }}" = "true" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}
+          - Composer dependencies upgraded to latest versions"
+          fi
+
+          if [ "${{ steps.check_changes.outputs.npm_changes }}" = "true" ]; then
+            RELEASE_NOTES="${RELEASE_NOTES}
+          - npm dependencies upgraded to latest versions"
+          fi
+
+          RELEASE_NOTES="${RELEASE_NOTES}
+
+          ### Verification
+          All tests passed:
+          - Setup commands (app, cms)
+          - Frontend build
+          - Homepage rendering
+          - Playwright tests
+          - PHPStan analysis
+          - Pest tests
+
+          ---
+          *This release was automatically created by the weekly dependency upgrade workflow.*"
+
+          # Create the release
+          echo "$RELEASE_NOTES" | gh release create "$NEW_VERSION" \
+            --title "Release $NEW_VERSION - Dependency Upgrade" \
+            --notes-file - \
+            --target main
+
+          echo "Release $NEW_VERSION created successfully!"
+
   notify-success:
     name: Notify Success (Slack)
     needs: [upgrade-and-test]
@@ -303,7 +365,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Repository:* `liftoff-starterkit`"
+                    "text": "*Repository:* `liftoff-starterkit`\n*Release:* `${{ needs.upgrade-and-test.outputs.new_version }}`"
                   }
                 },
                 {
@@ -320,17 +382,17 @@ jobs:
                       "type": "button",
                       "text": {
                         "type": "plain_text",
-                        "text": "View Workflow Run"
+                        "text": "View Release"
                       },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      "url": "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.upgrade-and-test.outputs.new_version }}"
                     },
                     {
                       "type": "button",
                       "text": {
                         "type": "plain_text",
-                        "text": "View Commits"
+                        "text": "View Workflow Run"
                       },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/commits/main"
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     }
                   ]
                 }
