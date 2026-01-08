@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\HasUuidV7;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,6 +12,7 @@ final class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
 
+    use HasUuidV7;
     use Notifiable;
 
     /**
