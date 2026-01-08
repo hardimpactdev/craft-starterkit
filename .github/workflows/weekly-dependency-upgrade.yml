@@ -231,7 +231,7 @@ jobs:
             echo "Composer changes detected"
           fi
 
-          if ! git diff --quiet package.json bun.lockb 2>/dev/null; then
+          if ! git diff --quiet package.json bun.lock 2>/dev/null; then
             NPM_CHANGED="true"
             echo "npm changes detected"
           fi
@@ -262,7 +262,7 @@ jobs:
 
           if [ "${{ steps.check_changes.outputs.npm_changes }}" = "true" ]; then
             COMMIT_BODY="${COMMIT_BODY}\n- npm dependencies upgraded to latest versions"
-            git add package.json bun.lockb
+            git add package.json bun.lock
           fi
 
           git commit -m "$COMMIT_MSG
