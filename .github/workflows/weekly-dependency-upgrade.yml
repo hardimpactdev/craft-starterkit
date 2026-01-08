@@ -38,15 +38,33 @@ jobs:
 
       - name: Check Dependabot alerts (before upgrade)
         id: check_alerts_before
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           echo "### Security Alerts (Before Upgrade)" >> $GITHUB_STEP_SUMMARY
 
-          # Fetch open Dependabot alerts
-          ALERTS=$(gh api repos/${{ github.repository }}/dependabot/alerts --jq '[.[] | select(.state == "open")]' 2>/dev/null || echo "[]")
+          # Fetch open Dependabot alerts - handle API errors gracefully
+          API_RESPONSE=$(gh api repos/${{ github.repository }}/dependabot/alerts 2>&1) || {
+            echo "Dependabot API unavailable (may need to enable Dependabot or add token permissions)"
+            echo "_Dependabot alerts could not be retrieved (API unavailable or disabled)_" >> $GITHUB_STEP_SUMMARY
+            echo "alert_count=0" >> $GITHUB_OUTPUT
+            echo "[]" > /tmp/alerts_before.json
+            touch /tmp/vulnerable_packages_before.txt
+            exit 0
+          }
 
-          ALERT_COUNT=$(echo "$ALERTS" | jq -r 'length' | tr -d '\n')
+          # Filter for open alerts
+          ALERTS=$(echo "$API_RESPONSE" | jq '[.[] | select(.state == "open")]' 2>/dev/null) || {
+            echo "Could not parse Dependabot response"
+            echo "_Could not parse Dependabot response_" >> $GITHUB_STEP_SUMMARY
+            echo "alert_count=0" >> $GITHUB_OUTPUT
+            echo "[]" > /tmp/alerts_before.json
+            touch /tmp/vulnerable_packages_before.txt
+            exit 0
+          }
+
+          ALERT_COUNT=$(echo "$ALERTS" | jq -r 'length')
           echo "Found $ALERT_COUNT open Dependabot security alerts"
           echo "alert_count=$ALERT_COUNT" >> $GITHUB_OUTPUT
 
@@ -59,10 +77,10 @@ jobs:
             echo "$ALERTS" > /tmp/alerts_before.json
 
             # Parse and display each alert
-            echo "$ALERTS" | jq -r '.[] | "| \(.security_advisory.severity // "unknown") | \(.security_vulnerability.package.name) | \(.security_advisory.summary // "N/A") | \(.security_advisory.cve_id // "N/A") |"' >> $GITHUB_STEP_SUMMARY
+            echo "$ALERTS" | jq -r '.[] | "| \(.security_advisory.severity // "unknown") | \(.security_vulnerability.package.name // "unknown") | \(.security_advisory.summary // "N/A" | .[0:60]) | \(.security_advisory.cve_id // "N/A") |"' >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
 
             # Also save package names for comparison
-            echo "$ALERTS" | jq -r '.[].security_vulnerability.package.name' | sort -u > /tmp/vulnerable_packages_before.txt
+            echo "$ALERTS" | jq -r '.[].security_vulnerability.package.name // empty' 2>/dev/null | sort -u > /tmp/vulnerable_packages_before.txt || true
 
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Total open alerts: $ALERT_COUNT**" >> $GITHUB_STEP_SUMMARY
@@ -289,14 +307,20 @@ jobs:
       - name: Check Dependabot alerts (after upgrade)
         id: check_alerts_after
         if: steps.check_changes.outputs.has_changes == 'true'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Security Alerts (After Upgrade)" >> $GITHUB_STEP_SUMMARY
 
-          # Get the alerts we recorded before
-          BEFORE_COUNT=$(cat /tmp/alerts_before.json | jq -r 'length' | tr -d '\n')
+          # Get the alerts we recorded before (handle missing file gracefully)
+          if [ -f /tmp/alerts_before.json ]; then
+            BEFORE_COUNT=$(cat /tmp/alerts_before.json | jq -r 'length' 2>/dev/null || echo "0")
+          else
+            BEFORE_COUNT=0
+          fi
+
           BEFORE_PACKAGES=$(cat /tmp/vulnerable_packages_before.txt 2>/dev/null || echo "")
 
           # Check which packages were upgraded
@@ -333,7 +357,7 @@ jobs:
 
           # Build summary
           SUMMARY=""
-          if [ "$BEFORE_COUNT" -gt 0 ]; then
+          if [ "$BEFORE_COUNT" -gt 0 ] 2>/dev/null; then
             if [ "$FIXED_COUNT" -gt 0 ]; then
               SUMMARY="$FIXED_COUNT of $BEFORE_COUNT security alerts may be resolved by this upgrade"
               echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
