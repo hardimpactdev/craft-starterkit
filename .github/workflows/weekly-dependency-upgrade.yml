@@ -188,11 +188,19 @@ jobs:
 
           # Test homepage
           echo "Testing homepage..."
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000)
+          RESPONSE=$(curl -s -w "\n%{http_code}" http://127.0.0.1:8000)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
           if [ "$HTTP_CODE" = "200" ]; then
             echo "Homepage returned HTTP $HTTP_CODE - Success!"
           else
             echo "Homepage returned HTTP $HTTP_CODE - Expected 200"
+            echo "Response body:"
+            echo "$BODY" | head -100
+            echo ""
+            echo "Laravel log (last 50 lines):"
+            cat storage/logs/laravel.log 2>/dev/null | tail -50 || echo "No log file found"
             kill $SERVER_PID 2>/dev/null || true
             exit 1
           fi
