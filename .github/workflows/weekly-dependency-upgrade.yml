@@ -46,7 +46,7 @@ jobs:
           # Fetch open Dependabot alerts
           ALERTS=$(gh api repos/${{ github.repository }}/dependabot/alerts --jq '[.[] | select(.state == "open")]' 2>/dev/null || echo "[]")
 
-          ALERT_COUNT=$(echo "$ALERTS" | jq 'length')
+          ALERT_COUNT=$(echo "$ALERTS" | jq -r 'length' | tr -d '\n')
           echo "Found $ALERT_COUNT open Dependabot security alerts"
           echo "alert_count=$ALERT_COUNT" >> $GITHUB_OUTPUT
 
@@ -296,7 +296,7 @@ jobs:
           echo "### Security Alerts (After Upgrade)" >> $GITHUB_STEP_SUMMARY
 
           # Get the alerts we recorded before
-          BEFORE_COUNT=$(cat /tmp/alerts_before.json | jq 'length')
+          BEFORE_COUNT=$(cat /tmp/alerts_before.json | jq -r 'length' | tr -d '\n')
           BEFORE_PACKAGES=$(cat /tmp/vulnerable_packages_before.txt 2>/dev/null || echo "")
 
           # Check which packages were upgraded
