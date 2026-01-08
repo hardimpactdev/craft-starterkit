@@ -27,6 +27,7 @@
     "dependencies": {
         "@hardimpactdev/liftoff-vue": "^0.0.46",
         "@inertiajs/vue3": "^2.3.7",
+        "@nuxt/ui": "^4.3.0",
         "@vitejs/plugin-vue": "^6.0.3",
         "@vueuse/core": "^14.1.0",
         "class-variance-authority": "^0.7.1",
