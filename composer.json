@@ -7,20 +7,6 @@
         "laravel",
         "framework"
     ],
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../waymaker"
-        },
-        {
-            "type": "path",
-            "url": "../liftoff-laravel"
-        },
-        {
-            "type": "path",
-            "url": "../laravel-toolbar"
-        }
-    ],
     "license": "MIT",
     "require": {
         "php": "^8.5",
@@ -29,15 +15,15 @@
         "laravel/horizon": "^5.31",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.2",
-        "hardimpactdev/liftoff-laravel": "@dev",
-        "hardimpactdev/waymaker": "@dev",
+        "hardimpactdev/liftoff-laravel": "^0.1.0",
+        "hardimpactdev/waymaker": "^0.1.0",
         "spatie/laravel-csp": "^3.8",
         "spatie/laravel-data": "^4.14",
         "spatie/laravel-typescript-transformer": "^2.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "nckrtl/laravel-toolbar": "@dev",
+        "nckrtl/laravel-toolbar": "^0.0.8",
         "larastan/larastan": "^3.0",
         "laravel/boost": "^1.0",
         "laravel/pail": "^1.2.2",

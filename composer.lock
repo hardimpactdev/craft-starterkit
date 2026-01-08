@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "32192bd627b93f89a6bcf7e54810a5a8",
+    "content-hash": "535a4676efb37639940bc7e00324b703",
     "packages": [
         {
             "name": "brick/math",
@@ -1102,11 +1102,17 @@
         },
         {
             "name": "hardimpactdev/liftoff-laravel",
-            "version": "dev-main",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hardimpactdev/liftoff-laravel.git",
+                "reference": "ce5c0ae12b606c92cee009448e22e1c012d37095"
+            },
             "dist": {
-                "type": "path",
-                "url": "../liftoff-laravel",
-                "reference": "e35b0794cb2481d112959eacc2f15ba0dd1b7742"
+                "type": "zip",
+                "url": "https://api.github.com/repos/hardimpactdev/liftoff-laravel/zipball/ce5c0ae12b606c92cee009448e22e1c012d37095",
+                "reference": "ce5c0ae12b606c92cee009448e22e1c012d37095",
+                "shasum": ""
             },
             "require": {
                 "illuminate/contracts": "^10.0||^11.0||^12.0",
@@ -1128,12 +1134,12 @@
             "type": "library",
             "extra": {
                 "laravel": {
-                    "providers": [
-                        "HardImpact\\Liftoff\\LaravelServiceProvider"
-                    ],
                     "aliases": {
                         "Laravel": "HardImpact\\Liftoff\\Facades\\Laravel"
-                    }
+                    },
+                    "providers": [
+                        "HardImpact\\Liftoff\\LaravelServiceProvider"
+                    ]
                 }
             },
             "autoload": {
@@ -1142,32 +1148,7 @@
                     "HardImpact\\Liftoff\\Database\\Factories\\": "database/factories/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "HardImpact\\Liftoff\\Tests\\": "tests/",
-                    "Workbench\\App\\": "workbench/app/"
-                }
-            },
-            "scripts": {
-                "post-autoload-dump": [
-                    "@composer run prepare"
-                ],
-                "prepare": [
-                    "@php vendor/bin/testbench package:discover --ansi"
-                ],
-                "analyse": [
-                    "vendor/bin/phpstan analyse"
-                ],
-                "test": [
-                    "vendor/bin/pest"
-                ],
-                "test-coverage": [
-                    "vendor/bin/pest --coverage"
-                ],
-                "format": [
-                    "vendor/bin/pint"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -1182,20 +1163,33 @@
             "homepage": "https://github.com/hardimpactdev/liftoff-laravel",
             "keywords": [
                 "Liftoff",
-                "laravel",
                 "laravel"
             ],
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/hardimpactdev/liftoff-laravel/issues",
+                "source": "https://github.com/hardimpactdev/liftoff-laravel/tree/v0.1.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/Liftoff",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-01-07T12:15:56+00:00"
         },
         {
             "name": "hardimpactdev/waymaker",
-            "version": "dev-main",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/hardimpactdev/waymaker.git",
+                "reference": "d87465832b0a8e6a72626202cb5c6295ee2479ad"
+            },
             "dist": {
-                "type": "path",
-                "url": "../waymaker",
-                "reference": "00097481fab217ee922e2d7526052abc789128d5"
+                "type": "zip",
+                "url": "https://api.github.com/repos/hardimpactdev/waymaker/zipball/d87465832b0a8e6a72626202cb5c6295ee2479ad",
+                "reference": "d87465832b0a8e6a72626202cb5c6295ee2479ad",
+                "shasum": ""
             },
             "require": {
                 "illuminate/contracts": "^10.0||^11.0||^12.0",
@@ -1206,7 +1200,7 @@
             "require-dev": {
                 "larastan/larastan": "^2.9||^3.0",
                 "laravel/pint": "^1.14",
-                "nunomaduro/collision": "^8.0",
+                "nunomaduro/collision": "^8.1.1||^7.10.0",
                 "orchestra/testbench": "^10.0.0||^9.0.0||^8.22.0",
                 "pestphp/pest": "^3.0",
                 "pestphp/pest-plugin-arch": "^3.0",
@@ -1218,12 +1212,12 @@
             "type": "library",
             "extra": {
                 "laravel": {
-                    "providers": [
-                        "HardImpact\\Waymaker\\WaymakerServiceProvider"
-                    ],
                     "aliases": {
                         "Waymaker": "HardImpact\\Waymaker\\Facades\\Waymaker"
-                    }
+                    },
+                    "providers": [
+                        "HardImpact\\Waymaker\\WaymakerServiceProvider"
+                    ]
                 }
             },
             "autoload": {
@@ -1232,32 +1226,7 @@
                     "HardImpact\\Waymaker\\Database\\Factories\\": "database/factories/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "HardImpact\\Waymaker\\Tests\\": "tests/",
-                    "Workbench\\App\\": "workbench/app/"
-                }
-            },
-            "scripts": {
-                "post-autoload-dump": [
-                    "@composer run prepare"
-                ],
-                "prepare": [
-                    "@php vendor/bin/testbench package:discover --ansi"
-                ],
-                "analyse": [
-                    "vendor/bin/phpstan analyse"
-                ],
-                "test": [
-                    "vendor/bin/pest"
-                ],
-                "test-coverage": [
-                    "vendor/bin/pest --coverage"
-                ],
-                "format": [
-                    "vendor/bin/pint"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -1268,19 +1237,24 @@
                     "role": "Developer"
                 }
             ],
-            "description": "Attribute-based route generation for Laravel - automatically generate routes from controller method attributes",
+            "description": "This is my package waymaker",
             "homepage": "https://github.com/hardimpactdev/waymaker",
             "keywords": [
-                "attributes",
-                "code-generation",
-                "inertia",
+                "HardImpact",
                 "laravel",
-                "routing",
-                "wayfinder"
+                "waymaker"
             ],
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/hardimpactdev/waymaker/issues",
+                "source": "https://github.com/hardimpactdev/waymaker/tree/v0.1.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/NckRtl",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-01-07T13:08:09+00:00"
         },
         {
             "name": "inertiajs/inertia-laravel",
@@ -1354,16 +1328,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.45.2",
+            "version": "v12.46.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "d644693433290996bf764397b086228ce81781e6"
+                "reference": "9dcff48d25a632c1fadb713024c952fec489c4ae"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/d644693433290996bf764397b086228ce81781e6",
-                "reference": "d644693433290996bf764397b086228ce81781e6",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/9dcff48d25a632c1fadb713024c952fec489c4ae",
+                "reference": "9dcff48d25a632c1fadb713024c952fec489c4ae",
                 "shasum": ""
             },
             "require": {
@@ -1572,7 +1546,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2026-01-07T15:03:01+00:00"
+            "time": "2026-01-07T23:26:53+00:00"
         },
         {
             "name": "laravel/horizon",
@@ -8336,11 +8310,17 @@
         },
         {
             "name": "nckrtl/laravel-toolbar",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "../laravel-toolbar",
+            "version": "v0.0.8",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nckrtl/laravel-toolbar.git",
                 "reference": "36226e37f4977c741e524873a4aad9711176896f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nckrtl/laravel-toolbar/zipball/36226e37f4977c741e524873a4aad9711176896f",
+                "reference": "36226e37f4977c741e524873a4aad9711176896f",
+                "shasum": ""
             },
             "require": {
                 "illuminate/contracts": "^11.0||^12.0",
@@ -8365,49 +8345,24 @@
             "type": "library",
             "extra": {
                 "laravel": {
-                    "providers": [
-                        "NckRtl\\Toolbar\\ToolbarServiceProvider"
-                    ],
                     "aliases": {
                         "Toolbar": "NckRtl\\Toolbar\\Facades\\Toolbar"
-                    }
+                    },
+                    "providers": [
+                        "NckRtl\\Toolbar\\ToolbarServiceProvider"
+                    ]
                 }
             },
             "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
                 "psr-4": {
                     "NckRtl\\Toolbar\\": "src/",
                     "NckRtl\\Toolbar\\Database\\Factories\\": "database/factories/"
-                },
-                "files": [
-                    "src/helpers.php"
-                ]
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "NckRtl\\Toolbar\\Tests\\": "tests/",
-                    "Workbench\\App\\": "workbench/app/"
                 }
             },
-            "scripts": {
-                "post-autoload-dump": [
-                    "@composer run prepare"
-                ],
-                "prepare": [
-                    "@php vendor/bin/testbench package:discover --ansi"
-                ],
-                "analyse": [
-                    "vendor/bin/phpstan analyse"
-                ],
-                "test": [
-                    "vendor/bin/pest"
-                ],
-                "test-coverage": [
-                    "vendor/bin/pest --coverage"
-                ],
-                "format": [
-                    "vendor/bin/pint"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -8426,9 +8381,17 @@
                 "nckrtl",
                 "toolbar"
             ],
-            "transport-options": {
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/nckrtl/laravel-toolbar/issues",
+                "source": "https://github.com/nckrtl/laravel-toolbar/tree/v0.0.8"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/nckrtl",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-01-07T13:30:21+00:00"
         },
         {
             "name": "nunomaduro/collision",
@@ -11011,11 +10974,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "hardimpactdev/liftoff-laravel": 20,
-        "hardimpactdev/waymaker": 20,
-        "nckrtl/laravel-toolbar": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
