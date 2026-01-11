@@ -22,6 +22,8 @@ jobs:
       has_changes: ${{ steps.check_changes.outputs.has_changes }}
       composer_changes: ${{ steps.check_changes.outputs.composer_changes }}
       npm_changes: ${{ steps.check_changes.outputs.npm_changes }}
+      composer_upgrades: ${{ steps.composer_upgrade.outputs.upgrades }}
+      npm_upgrades: ${{ steps.npm_upgrade.outputs.upgrades }}
       new_version: ${{ steps.create_release.outputs.new_version }}
       security_alerts_before: ${{ steps.check_alerts_before.outputs.alert_count }}
       security_alerts_after: ${{ steps.check_alerts_after.outputs.alert_count }}
@@ -129,8 +131,11 @@ jobs:
           echo "Checking for available Composer upgrades..."
           echo "### Composer Dependency Upgrades" >> $GITHUB_STEP_SUMMARY
 
-          # Get outdated direct dependencies
-          OUTDATED=$(composer outdated --direct --format=json 2>/dev/null | jq -r '.installed[] | select(.latest != null and .version != .latest) | "\(.name):\(.latest)"' || true)
+          # Get outdated direct dependencies with current and latest versions
+          OUTDATED_JSON=$(composer outdated --direct --format=json 2>/dev/null || echo '{"installed":[]}')
+          OUTDATED=$(echo "$OUTDATED_JSON" | jq -r '.installed[] | select(.latest != null and .version != .latest) | "\(.name):\(.version):\(.latest)"' || true)
+
+          UPGRADE_LIST=""
 
           if [ -n "$OUTDATED" ]; then
             echo "Found outdated packages to upgrade:"
@@ -139,16 +144,24 @@ jobs:
 
             for pkg in $OUTDATED; do
               PACKAGE_NAME=$(echo "$pkg" | cut -d: -f1)
-              LATEST_VERSION=$(echo "$pkg" | cut -d: -f2)
+              CURRENT_VERSION=$(echo "$pkg" | cut -d: -f2)
+              LATEST_VERSION=$(echo "$pkg" | cut -d: -f3)
+
+              # Build upgrade list for release notes (format: package:old:new)
+              if [ -n "$UPGRADE_LIST" ]; then
+                UPGRADE_LIST="${UPGRADE_LIST}|${PACKAGE_NAME}:${CURRENT_VERSION}:${LATEST_VERSION}"
+              else
+                UPGRADE_LIST="${PACKAGE_NAME}:${CURRENT_VERSION}:${LATEST_VERSION}"
+              fi
 
               # Check if it's a dev dependency
               if grep -A100 '"require-dev"' composer.json | grep -q "\"$PACKAGE_NAME\""; then
-                echo "Upgrading dev dependency $PACKAGE_NAME to ^$LATEST_VERSION..."
-                echo "- \`$PACKAGE_NAME\` → \`^$LATEST_VERSION\` (dev)" >> $GITHUB_STEP_SUMMARY
+                echo "Upgrading dev dependency $PACKAGE_NAME from $CURRENT_VERSION to ^$LATEST_VERSION..."
+                echo "- \`$PACKAGE_NAME\`: \`$CURRENT_VERSION\` → \`$LATEST_VERSION\` (dev)" >> $GITHUB_STEP_SUMMARY
                 composer require --dev "$PACKAGE_NAME:^$LATEST_VERSION" --no-interaction --no-update || true
               else
-                echo "Upgrading $PACKAGE_NAME to ^$LATEST_VERSION..."
-                echo "- \`$PACKAGE_NAME\` → \`^$LATEST_VERSION\`" >> $GITHUB_STEP_SUMMARY
+                echo "Upgrading $PACKAGE_NAME from $CURRENT_VERSION to ^$LATEST_VERSION..."
+                echo "- \`$PACKAGE_NAME\`: \`$CURRENT_VERSION\` → \`$LATEST_VERSION\`" >> $GITHUB_STEP_SUMMARY
                 composer require "$PACKAGE_NAME:^$LATEST_VERSION" --no-interaction --no-update || true
               fi
             done
@@ -157,9 +170,13 @@ jobs:
             echo ""
             echo "Running composer update..."
             composer update --no-interaction --prefer-dist --with-all-dependencies
+
+            # Output the upgrades list for use in release notes
+            echo "upgrades=$UPGRADE_LIST" >> $GITHUB_OUTPUT
           else
             echo "No Composer upgrades available."
             echo "_No Composer upgrades available_" >> $GITHUB_STEP_SUMMARY
+            echo "upgrades=" >> $GITHUB_OUTPUT
           fi
 
       - name: Upgrade npm dependencies to latest versions
@@ -171,23 +188,75 @@ jobs:
           # Install npm-check-updates
           bun add -g npm-check-updates
 
-          # Check what would be upgraded
+          # Get available upgrades in JSON format before updating
           echo "Available upgrades:"
-          bunx ncu || true
+          NCU_OUTPUT=$(bunx ncu --jsonUpgraded 2>/dev/null || echo '{}')
+          echo "$NCU_OUTPUT" | jq . || true
 
           # Upgrade all dependencies in package.json to latest versions
           echo ""
           echo "Upgrading package.json to latest versions..."
+
+          # Get current versions before upgrade
+          CURRENT_VERSIONS=$(jq -r '.dependencies // {} | to_entries[] | "\(.key):\(.value)"' package.json 2>/dev/null || echo "")
+          CURRENT_DEV_VERSIONS=$(jq -r '.devDependencies // {} | to_entries[] | "\(.key):\(.value)"' package.json 2>/dev/null || echo "")
+
           bunx ncu -u
+
+          UPGRADE_LIST=""
 
           # Show what changed
           if ! git diff --quiet package.json; then
             echo "package.json was modified with new versions"
             echo "#### Upgraded packages:" >> $GITHUB_STEP_SUMMARY
-            git diff package.json | grep "^[+-]" | grep -v "^[+-][+-]" >> $GITHUB_STEP_SUMMARY || true
+
+            # Get new versions after upgrade
+            NEW_VERSIONS=$(jq -r '.dependencies // {} | to_entries[] | "\(.key):\(.value)"' package.json 2>/dev/null || echo "")
+            NEW_DEV_VERSIONS=$(jq -r '.devDependencies // {} | to_entries[] | "\(.key):\(.value)"' package.json 2>/dev/null || echo "")
+
+            # Compare and build upgrade list for dependencies
+            while IFS= read -r new_entry; do
+              [ -z "$new_entry" ] && continue
+              PKG_NAME=$(echo "$new_entry" | cut -d: -f1)
+              NEW_VER=$(echo "$new_entry" | cut -d: -f2)
+
+              # Find old version
+              OLD_VER=$(echo "$CURRENT_VERSIONS" | grep "^${PKG_NAME}:" | cut -d: -f2 || echo "")
+
+              if [ -n "$OLD_VER" ] && [ "$OLD_VER" != "$NEW_VER" ]; then
+                echo "- \`$PKG_NAME\`: \`$OLD_VER\` → \`$NEW_VER\`" >> $GITHUB_STEP_SUMMARY
+                if [ -n "$UPGRADE_LIST" ]; then
+                  UPGRADE_LIST="${UPGRADE_LIST}|${PKG_NAME}:${OLD_VER}:${NEW_VER}"
+                else
+                  UPGRADE_LIST="${PKG_NAME}:${OLD_VER}:${NEW_VER}"
+                fi
+              fi
+            done <<< "$NEW_VERSIONS"
+
+            # Compare and build upgrade list for devDependencies
+            while IFS= read -r new_entry; do
+              [ -z "$new_entry" ] && continue
+              PKG_NAME=$(echo "$new_entry" | cut -d: -f1)
+              NEW_VER=$(echo "$new_entry" | cut -d: -f2)
+
+              # Find old version
+              OLD_VER=$(echo "$CURRENT_DEV_VERSIONS" | grep "^${PKG_NAME}:" | cut -d: -f2 || echo "")
+
+              if [ -n "$OLD_VER" ] && [ "$OLD_VER" != "$NEW_VER" ]; then
+                echo "- \`$PKG_NAME\`: \`$OLD_VER\` → \`$NEW_VER\` (dev)" >> $GITHUB_STEP_SUMMARY
+                if [ -n "$UPGRADE_LIST" ]; then
+                  UPGRADE_LIST="${UPGRADE_LIST}|${PKG_NAME}:${OLD_VER}:${NEW_VER}"
+                else
+                  UPGRADE_LIST="${PKG_NAME}:${OLD_VER}:${NEW_VER}"
+                fi
+              fi
+            done <<< "$NEW_DEV_VERSIONS"
+
+            echo "upgrades=$UPGRADE_LIST" >> $GITHUB_OUTPUT
           else
             echo "No npm upgrades available"
             echo "_No npm upgrades available_" >> $GITHUB_STEP_SUMMARY
+            echo "upgrades=" >> $GITHUB_OUTPUT
           fi
 
           # Install upgraded dependencies
@@ -383,14 +452,38 @@ jobs:
           COMMIT_MSG="chore(deps): weekly dependency upgrade ($(date +%Y-%m-%d))"
           COMMIT_BODY=""
 
+          # Add Composer upgrades
+          COMPOSER_UPGRADES="${{ steps.composer_upgrade.outputs.upgrades }}"
           if [ "${{ steps.check_changes.outputs.composer_changes }}" = "true" ]; then
-            COMMIT_BODY="${COMMIT_BODY}\n- Composer dependencies upgraded to latest versions"
             git add composer.json composer.lock
+            if [ -n "$COMPOSER_UPGRADES" ]; then
+              COMMIT_BODY="${COMMIT_BODY}\n\nComposer:"
+              echo "$COMPOSER_UPGRADES" | tr '|' '\n' | while IFS=: read -r pkg old new; do
+                [ -z "$pkg" ] && continue
+                echo "- $pkg: $old → $new"
+              done > /tmp/composer_commit.txt
+              COMPOSER_LIST=$(cat /tmp/composer_commit.txt)
+              COMMIT_BODY="${COMMIT_BODY}\n${COMPOSER_LIST}"
+            else
+              COMMIT_BODY="${COMMIT_BODY}\n- Composer dependencies upgraded"
+            fi
           fi
 
+          # Add npm upgrades
+          NPM_UPGRADES="${{ steps.npm_upgrade.outputs.upgrades }}"
           if [ "${{ steps.check_changes.outputs.npm_changes }}" = "true" ]; then
-            COMMIT_BODY="${COMMIT_BODY}\n- npm dependencies upgraded to latest versions"
             git add package.json bun.lock
+            if [ -n "$NPM_UPGRADES" ]; then
+              COMMIT_BODY="${COMMIT_BODY}\n\nnpm:"
+              echo "$NPM_UPGRADES" | tr '|' '\n' | while IFS=: read -r pkg old new; do
+                [ -z "$pkg" ] && continue
+                echo "- $pkg: $old → $new"
+              done > /tmp/npm_commit.txt
+              NPM_LIST=$(cat /tmp/npm_commit.txt)
+              COMMIT_BODY="${COMMIT_BODY}\n${NPM_LIST}"
+            else
+              COMMIT_BODY="${COMMIT_BODY}\n- npm dependencies upgraded"
+            fi
           fi
 
           # Add security info if applicable
@@ -402,8 +495,7 @@ jobs:
           git commit -m "$COMMIT_MSG
 
           Automated weekly upgrade including major version upgrades where compatible.
-
-          Changes:$(echo -e "$COMMIT_BODY")$(echo -e "$SECURITY_INFO")
+          $(echo -e "$COMMIT_BODY")$(echo -e "$SECURITY_INFO")
 
           All tests passed:
           - Setup commands (app, cms)
@@ -440,18 +532,38 @@ jobs:
           # Build release notes
           RELEASE_NOTES="## Weekly Dependency Upgrade
 
-          Automated dependency upgrade performed on $(date +%Y-%m-%d).
+          Automated dependency upgrade performed on $(date +%Y-%m-%d)."
 
-          ### Changes"
-
-          if [ "${{ steps.check_changes.outputs.composer_changes }}" = "true" ]; then
+          # Add Composer upgrades
+          COMPOSER_UPGRADES="${{ steps.composer_upgrade.outputs.upgrades }}"
+          if [ -n "$COMPOSER_UPGRADES" ]; then
             RELEASE_NOTES="${RELEASE_NOTES}
-          - Composer dependencies upgraded to latest versions"
+
+          ### Composer Packages"
+            # Parse the pipe-separated list and format each upgrade
+            echo "$COMPOSER_UPGRADES" | tr '|' '\n' | while IFS=: read -r pkg old new; do
+              [ -z "$pkg" ] && continue
+              echo "- \`$pkg\`: $old → $new"
+            done > /tmp/composer_list.txt
+            COMPOSER_LIST=$(cat /tmp/composer_list.txt)
+            RELEASE_NOTES="${RELEASE_NOTES}
+          ${COMPOSER_LIST}"
           fi
 
-          if [ "${{ steps.check_changes.outputs.npm_changes }}" = "true" ]; then
+          # Add npm upgrades
+          NPM_UPGRADES="${{ steps.npm_upgrade.outputs.upgrades }}"
+          if [ -n "$NPM_UPGRADES" ]; then
             RELEASE_NOTES="${RELEASE_NOTES}
-          - npm dependencies upgraded to latest versions"
+
+          ### npm Packages"
+            # Parse the pipe-separated list and format each upgrade
+            echo "$NPM_UPGRADES" | tr '|' '\n' | while IFS=: read -r pkg old new; do
+              [ -z "$pkg" ] && continue
+              echo "- \`$pkg\`: $old → $new"
+            done > /tmp/npm_list.txt
+            NPM_LIST=$(cat /tmp/npm_list.txt)
+            RELEASE_NOTES="${RELEASE_NOTES}
+          ${NPM_LIST}"
           fi
 
           # Add security alert info if present
