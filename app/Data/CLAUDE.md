@@ -1,1 +1,10 @@
-This directory should only contain DTO's. See `/.cursor/rules/backend/DTOs.mdc` for all rules related to DTO's.
+# Data Directory
+
+Data Transfer Objects (DTOs) for type-safe data passing.
+
+## Requirements
+
+- Use `readonly` classes
+- All properties should be typed
+- Use for transferring data between layers
+- FormRequests should return DTOs via `getData()` method

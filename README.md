@@ -19,9 +19,9 @@ This template project is based off the official [liftoff-starter-kit](https://gi
 - Whisky, for setting up git hooks
 - Route maker, for managing your routes from your controllers
 
-## Editor
+## AI-Assisted Development
 
-It assumes you're using Cursor. Basic rules have been setup in `.cursor/rules`
+This project uses hierarchical `CLAUDE.md` files for AI coding assistants. See the root `CLAUDE.md` for the complete structure and development guidelines.
 
 ## Getting started
 

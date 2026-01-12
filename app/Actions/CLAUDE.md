@@ -1,8 +1,8 @@
 # Actions Directory
 
-Business logic classes using the Action pattern. See `/.ai/rules/backend/Actions.mdc` for rules.
+Business logic classes using the Action pattern.
 
-## Quick Reference
+## Structure
 
 ```php
 <?php
@@ -24,4 +24,10 @@ final readonly class DoSomething
 }
 ```
 
-**Required:** `final readonly`, `declare(strict_types=1)`, single `handle()` method.
+## Requirements
+
+- Always `final readonly`
+- Always `declare(strict_types=1)`
+- Single `handle()` method only
+- Constructor injection for dependencies
+- Organize by domain: `Actions/Orders/`, `Actions/Users/`
