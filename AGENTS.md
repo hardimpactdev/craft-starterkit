@@ -147,11 +147,11 @@ Controllers.UserController.store.url();
 ('/users');
 ```
 
-**Formatting** (from .prettierrc):
+**Formatting** (from .oxfmtrc.json):
 
 - Print width: 100
 - Single quotes: true
-- Tailwind plugin for class sorting
+- Tailwind class sorting enabled
 
 ### PHP Formatting (Laravel Pint)
 
