@@ -1,6 +1,6 @@
 # Laravel + Vue Starter Kit
 
-This template project is based off the official [liftoff-starter-kit](https://github.com/laravel/vue-starter-kit). It has been (opinionately) optimized for a better Liftoff developer experience:
+This template project is based off the official [vue-starter-kit](https://github.com/laravel/vue-starter-kit). It has been (opinionately) optimized for a better Craft developer experience:
 
 ## It assumes you use the following technologies:
 

@@ -1,11 +1,13 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "hardimpactdev/craft-starterkit",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Craft Starterkit - Laravel + Vue + Inertia application scaffold.",
     "keywords": [
         "laravel",
-        "framework"
+        "vue",
+        "inertia",
+        "starterkit"
     ],
     "license": "MIT",
     "require": {

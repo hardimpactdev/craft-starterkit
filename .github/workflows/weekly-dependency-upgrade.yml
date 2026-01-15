@@ -634,7 +634,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Repository:* `liftoff-starterkit`\n*Release:* `${{ needs.upgrade-and-test.outputs.new_version }}`"
+                    "text": "*Repository:* `craft-starterkit`\\n*Release:* `${{ needs.upgrade-and-test.outputs.new_version }}`"
                   }
                 },
                 {
@@ -705,7 +705,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Repository:* `liftoff-starterkit`"
+                    "text": "*Repository:* `craft-starterkit`"
                   }
                 },
                 {
@@ -781,7 +781,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*liftoff-starterkit*: No dependency upgrades available this week. All packages are at their latest versions."
+                    "text": "*craft-starterkit*: No dependency upgrades available this week. All packages are at their latest versions."
                   }
                 }
               ]
