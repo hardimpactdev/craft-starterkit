@@ -104,7 +104,7 @@ jobs:
         with:
           bun-version: latest
 
-      # Note: @hardimpactdev/liftoff-vue is published to public npm registry
+      # Note: @hardimpactdev/craft-ui is published to public npm registry
       # No special npm configuration needed
 
       - name: Get Composer cache directory

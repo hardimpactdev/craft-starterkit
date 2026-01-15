@@ -61,7 +61,7 @@ async function testConnection() {
 
 - Use Composition API with `<script setup>`
 - Use AppLayout - don't create custom layouts
-- Check liftoff-vue components before creating custom ones
+- Check craft-ui components before creating custom ones
 - Don't manually import auto-imported components
 
 ## Routing

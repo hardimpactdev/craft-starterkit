@@ -288,7 +288,7 @@ Always use `AppLayout` - never create custom layouts.
 
 ### Components
 
-Check `@hardimpactdev/liftoff-vue` before creating custom components.
+Check `@hardimpactdev/craft-ui` before creating custom components.
 
 ## Important Reminders
 

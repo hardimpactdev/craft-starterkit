@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import '../../node_modules/@hardimpactdev/liftoff-vue/dist/liftoff-vue.css';
+@import '../../node_modules/@hardimpactdev/craft-ui/dist/craft-ui.css';
 @import './theme.css';
 @import './nprogress.css';
 

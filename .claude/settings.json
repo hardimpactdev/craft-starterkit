@@ -1,13 +1,13 @@
 {
-  "plugins": {
-    "marketplace": "hardimpactdev/claude-plugins",
-    "installed": [
-      "liftoff-laravel",
-      "liftoff-vue",
-      "php-quality",
-      "git-workflow",
-      "dev-environment",
-      "liftoff-scaffold"
-    ]
-  }
+    "plugins": {
+        "marketplace": "hardimpactdev/claude-plugins",
+        "installed": [
+            "liftoff-laravel",
+            "craft-ui",
+            "php-quality",
+            "git-workflow",
+            "dev-environment",
+            "liftoff-scaffold"
+        ]
+    }
 }
