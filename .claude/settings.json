@@ -2,7 +2,7 @@
     "plugins": {
         "marketplace": "hardimpactdev/claude-plugins",
         "installed": [
-            "liftoff-laravel",
+            "craft-laravel",
             "craft-ui",
             "php-quality",
             "git-workflow",
