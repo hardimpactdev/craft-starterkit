@@ -278,8 +278,8 @@ jobs:
 
       - name: Test setup command - App (Auth + Dashboard)
         run: |
-          echo "Testing liftoff:setup app..."
-          php artisan liftoff:setup app
+          echo "Testing craft:setup app..."
+          php artisan craft:setup app
 
           echo "Verifying Auth files..."
           test -f app/Http/Controllers/Auth/LoginController.php
@@ -294,8 +294,8 @@ jobs:
 
       - name: Test setup command - CMS
         run: |
-          echo "Testing liftoff:setup cms..."
-          php artisan liftoff:setup cms || echo "CMS setup may require additional dependencies"
+          echo "Testing craft:setup cms..."
+          php artisan craft:setup cms || echo "CMS setup may require additional dependencies"
 
           echo "Setup cms test completed!"
 

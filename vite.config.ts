@@ -1,3 +1,3 @@
-import { defineLiftoffConfig } from '@hardimpactdev/craft-ui/vite';
+import { defineCraftConfig } from '@hardimpactdev/craft-ui/vite';
 
-export default defineLiftoffConfig();
+export default defineCraftConfig();

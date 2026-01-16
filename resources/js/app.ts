@@ -1,5 +1,5 @@
 import '../css/app.css';
 
-import { initializeLiftoff } from 'virtual:liftoff';
+import { initializeCraft } from 'virtual:craft';
 
-initializeLiftoff();
+initializeCraft();

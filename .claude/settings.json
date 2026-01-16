@@ -7,7 +7,7 @@
             "php-quality",
             "git-workflow",
             "dev-environment",
-            "liftoff-scaffold"
+            "craft-scaffold"
         ]
     }
 }
