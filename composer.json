@@ -13,7 +13,7 @@
     "require": {
         "php": "^8.4",
         "filament/filament": "^3.3",
-        "hardimpactdev/craft-laravel": "^v0.0.1",
+        "hardimpactdev/craft-laravel": "^0.1.6",
         "hardimpactdev/waymaker": "^v0.1.1",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
