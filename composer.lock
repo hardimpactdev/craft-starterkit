@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7d1063e655c6345aa41acba0e697fffd",
+    "content-hash": "42e87604b46f679d245f2ca496f3a3a8",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -1960,17 +1960,17 @@
             "time": "2025-08-22T14:27:06+00:00"
         },
         {
-            "name": "hardimpactdev/liftoff-laravel",
-            "version": "v0.1.4",
+            "name": "hardimpactdev/craft-laravel",
+            "version": "0.1.6",
             "source": {
                 "type": "git",
-                "url": "https://github.com/hardimpactdev/liftoff-laravel.git",
-                "reference": "5314d7163f67c6723a19c22ea85f30adecd772d3"
+                "url": "https://github.com/hardimpactdev/craft-laravel.git",
+                "reference": "4df6901454897768ae8f332d3e556dd214bdc8b6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/hardimpactdev/liftoff-laravel/zipball/5314d7163f67c6723a19c22ea85f30adecd772d3",
-                "reference": "5314d7163f67c6723a19c22ea85f30adecd772d3",
+                "url": "https://api.github.com/repos/hardimpactdev/craft-laravel/zipball/4df6901454897768ae8f332d3e556dd214bdc8b6",
+                "reference": "4df6901454897768ae8f332d3e556dd214bdc8b6",
                 "shasum": ""
             },
             "require": {
@@ -1994,17 +1994,17 @@
             "extra": {
                 "laravel": {
                     "aliases": {
-                        "Laravel": "HardImpact\\Liftoff\\Facades\\Laravel"
+                        "Laravel": "HardImpact\\Craft\\Facades\\Laravel"
                     },
                     "providers": [
-                        "HardImpact\\Liftoff\\LaravelServiceProvider"
+                        "HardImpact\\Craft\\LaravelServiceProvider"
                     ]
                 }
             },
             "autoload": {
                 "psr-4": {
-                    "HardImpact\\Liftoff\\": "src/",
-                    "HardImpact\\Liftoff\\Database\\Factories\\": "database/factories/"
+                    "HardImpact\\Craft\\": "src/",
+                    "HardImpact\\Craft\\Database\\Factories\\": "database/factories/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -2019,14 +2019,14 @@
                 }
             ],
             "description": "This is my package laravel",
-            "homepage": "https://github.com/hardimpactdev/liftoff-laravel",
+            "homepage": "https://github.com/hardimpactdev/craft-laravel",
             "keywords": [
-                "Liftoff",
+                "Craft",
                 "laravel"
             ],
             "support": {
-                "issues": "https://github.com/hardimpactdev/liftoff-laravel/issues",
-                "source": "https://github.com/hardimpactdev/liftoff-laravel/tree/v0.1.4"
+                "issues": "https://github.com/hardimpactdev/craft-laravel/issues",
+                "source": "https://github.com/hardimpactdev/craft-laravel/tree/0.1.6"
             },
             "funding": [
                 {
@@ -2034,7 +2034,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-01-08T15:31:02+00:00"
+            "time": "2026-01-16T12:30:37+00:00"
         },
         {
             "name": "hardimpactdev/waymaker",
