@@ -21,7 +21,7 @@ class Development implements Preset
         $appDomain = explode('://', $appUrl)[1];
 
         $policy
-            ->add(Directive::CONNECT, ['wss://'.$appDomain.':*', 'https://'.$appDomain.':*', 'ws://laravel-toolbar.test:*', 'wss://laravel-toolbar.test:*', 'http://laravel-toolbar.test:*', 'https://toolbar.test:*'])
+            ->add(Directive::CONNECT, ['wss://localhost:*', 'wss://'.$appDomain.':*', 'https://'.$appDomain.':*', 'ws://laravel-toolbar.test:*', 'wss://laravel-toolbar.test:*', 'http://laravel-toolbar.test:*', 'https://toolbar.test:*'])
             ->add(Directive::STYLE, [
                 'https://'.$appDomain.':*',
                 Keyword::UNSAFE_INLINE,

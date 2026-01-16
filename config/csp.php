@@ -1,7 +1,5 @@
 <?php
 
-use Spatie\Csp\Directive;
-
 return [
 
     /*
@@ -17,9 +15,7 @@ return [
      * Register additional global CSP directives here.
      */
     'directives' => [
-        // When prefetching links in inertia, the progress bar is hidden via inline styles.
-        // This is the sha256 of that element, and is allowed globally to allow it.
-        [Directive::STYLE, ['sha256-s0f9DrFYo3bm+TdJu1cRcxZWbQ+Kdh13sSjexIM3gcI=']],
+        //
     ],
 
     /*
