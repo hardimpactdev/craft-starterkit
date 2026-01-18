@@ -1102,16 +1102,16 @@
         },
         {
             "name": "hardimpactdev/craft-laravel",
-            "version": "0.1.6",
+            "version": "0.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/hardimpactdev/craft-laravel.git",
-                "reference": "4df6901454897768ae8f332d3e556dd214bdc8b6"
+                "reference": "cbf46d2c724e08014708e1e4cdc01bab35c9753d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/hardimpactdev/craft-laravel/zipball/4df6901454897768ae8f332d3e556dd214bdc8b6",
-                "reference": "4df6901454897768ae8f332d3e556dd214bdc8b6",
+                "url": "https://api.github.com/repos/hardimpactdev/craft-laravel/zipball/cbf46d2c724e08014708e1e4cdc01bab35c9753d",
+                "reference": "cbf46d2c724e08014708e1e4cdc01bab35c9753d",
                 "shasum": ""
             },
             "require": {
@@ -1167,7 +1167,7 @@
             ],
             "support": {
                 "issues": "https://github.com/hardimpactdev/craft-laravel/issues",
-                "source": "https://github.com/hardimpactdev/craft-laravel/tree/0.1.6"
+                "source": "https://github.com/hardimpactdev/craft-laravel/tree/0.1.7"
             },
             "funding": [
                 {
@@ -1175,7 +1175,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-01-16T12:30:37+00:00"
+            "time": "2026-01-18T21:03:31+00:00"
         },
         {
             "name": "hardimpactdev/waymaker",
