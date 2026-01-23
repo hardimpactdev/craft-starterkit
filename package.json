@@ -25,7 +25,7 @@
         "vite-plugin-run": "^0.6.1"
     },
     "dependencies": {
-        "@hardimpactdev/craft-ui": "^0.0.7",
+        "@hardimpactdev/craft-ui": "^0.0.17",
         "@inertiajs/vue3": "^2.3.8",
         "@nuxt/ui": "^4.3.0",
         "@vitejs/plugin-vue": "^6.0.3",
