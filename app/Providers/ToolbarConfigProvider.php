@@ -26,7 +26,7 @@ class ToolbarConfigProvider extends ToolbarProvider
                     groupConfig: new GroupConfig()->setTools(
                         new VueDevtoolsTool,
                         new VueInspectorTool,
-                    )->section(Section::RIGHT), prepend: true
+                    )->section(Section::CENTER), prepend: true
                 );
             });
     }

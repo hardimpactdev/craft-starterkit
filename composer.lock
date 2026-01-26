@@ -8313,16 +8313,16 @@
         },
         {
             "name": "nckrtl/laravel-toolbar",
-            "version": "v0.1.2",
+            "version": "v0.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nckrtl/laravel-toolbar.git",
-                "reference": "da9f97a77b7100e48d9e3e47ef7dd5449edf29c7"
+                "reference": "6d5f19372cd678fc2d03a4949e18d0f31601b74c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nckrtl/laravel-toolbar/zipball/da9f97a77b7100e48d9e3e47ef7dd5449edf29c7",
-                "reference": "da9f97a77b7100e48d9e3e47ef7dd5449edf29c7",
+                "url": "https://api.github.com/repos/nckrtl/laravel-toolbar/zipball/6d5f19372cd678fc2d03a4949e18d0f31601b74c",
+                "reference": "6d5f19372cd678fc2d03a4949e18d0f31601b74c",
                 "shasum": ""
             },
             "require": {
@@ -8386,7 +8386,7 @@
             ],
             "support": {
                 "issues": "https://github.com/nckrtl/laravel-toolbar/issues",
-                "source": "https://github.com/nckrtl/laravel-toolbar/tree/v0.1.2"
+                "source": "https://github.com/nckrtl/laravel-toolbar/tree/v0.1.3"
             },
             "funding": [
                 {
@@ -8394,7 +8394,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-01-15T12:27:11+00:00"
+            "time": "2026-01-26T08:36:08+00:00"
         },
         {
             "name": "nunomaduro/collision",
