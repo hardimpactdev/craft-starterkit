@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f6dfc66fbd530a20251b944c5f8bc769",
+    "content-hash": "68a9eee04c4b0c27b944cc4ed8887d34",
     "packages": [
         {
             "name": "brick/math",
@@ -1102,28 +1102,28 @@
         },
         {
             "name": "hardimpactdev/craft-laravel",
-            "version": "0.1.7",
+            "version": "v0.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/hardimpactdev/craft-laravel.git",
-                "reference": "cbf46d2c724e08014708e1e4cdc01bab35c9753d"
+                "reference": "4e883593a4287d2acd3c6578c804d22cf5410072"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/hardimpactdev/craft-laravel/zipball/cbf46d2c724e08014708e1e4cdc01bab35c9753d",
-                "reference": "cbf46d2c724e08014708e1e4cdc01bab35c9753d",
+                "url": "https://api.github.com/repos/hardimpactdev/craft-laravel/zipball/4e883593a4287d2acd3c6578c804d22cf5410072",
+                "reference": "4e883593a4287d2acd3c6578c804d22cf5410072",
                 "shasum": ""
             },
             "require": {
-                "illuminate/contracts": "^10.0||^11.0||^12.0",
-                "php": "^8.4",
+                "illuminate/contracts": "^12.0",
+                "php": "^8.3",
                 "spatie/laravel-package-tools": "^1.16"
             },
             "require-dev": {
                 "larastan/larastan": "^2.9||^3.0",
                 "laravel/pint": "^1.14",
-                "nunomaduro/collision": "^8.1.1||^7.10.0",
-                "orchestra/testbench": "^10.0.0||^9.0.0||^8.22.0",
+                "nunomaduro/collision": "^8.1.1",
+                "orchestra/testbench": "^10.0.0",
                 "pestphp/pest": "^3.0",
                 "pestphp/pest-plugin-arch": "^3.0",
                 "pestphp/pest-plugin-laravel": "^3.0",
@@ -1167,7 +1167,7 @@
             ],
             "support": {
                 "issues": "https://github.com/hardimpactdev/craft-laravel/issues",
-                "source": "https://github.com/hardimpactdev/craft-laravel/tree/0.1.7"
+                "source": "https://github.com/hardimpactdev/craft-laravel/tree/v0.2.1"
             },
             "funding": [
                 {
@@ -1175,7 +1175,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-01-18T21:03:31+00:00"
+            "time": "2026-01-23T20:07:39+00:00"
         },
         {
             "name": "hardimpactdev/waymaker",

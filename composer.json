@@ -12,7 +12,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
-        "hardimpactdev/craft-laravel": "^0.1.6",
+        "hardimpactdev/craft-laravel": "^0.2.1",
         "hardimpactdev/waymaker": "^v0.1.1",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
