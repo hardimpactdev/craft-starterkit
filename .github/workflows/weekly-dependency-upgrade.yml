@@ -280,10 +280,12 @@ jobs:
           echo "Testing craft:setup app..."
           php artisan craft:setup app
 
-          echo "Verifying Auth files..."
-          test -f app/Http/Controllers/Auth/LoginController.php
-          test -f app/Http/Controllers/Auth/RegisterController.php
+          echo "Verifying Fortify/Auth files..."
+          test -f app/Providers/FortifyServiceProvider.php
+          test -f config/fortify.php
+          test -f app/Actions/Fortify/CreateNewUser.php
           test -f resources/js/pages/auth/Login.vue
+          test -f resources/js/pages/auth/Register.vue
 
           echo "Verifying Dashboard files..."
           test -f app/Http/Controllers/DashboardController.php
