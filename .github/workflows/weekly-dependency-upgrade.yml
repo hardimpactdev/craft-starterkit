@@ -118,11 +118,6 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
-      - name: Install current Composer dependencies
-        env:
-          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GH_PAT }}"}}'
-        run: composer install --no-interaction --prefer-dist
-
       - name: Upgrade Composer dependencies to latest versions
         id: composer_upgrade
         env:
@@ -130,6 +125,10 @@ jobs:
         run: |
           echo "Checking for available Composer upgrades..."
           echo "### Composer Dependency Upgrades" >> $GITHUB_STEP_SUMMARY
+
+          # First ensure lock file is in sync with composer.json
+          echo "Syncing lock file with composer.json..."
+          composer update --no-interaction --prefer-dist --with-all-dependencies
 
           # Get outdated direct dependencies with current and latest versions
           OUTDATED_JSON=$(composer outdated --direct --format=json 2>/dev/null || echo '{"installed":[]}')
