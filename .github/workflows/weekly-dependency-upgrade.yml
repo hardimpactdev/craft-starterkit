@@ -300,6 +300,9 @@ jobs:
 
           echo "Setup cms test completed!"
 
+      - name: Generate wayfinder TypeScript files
+        run: php artisan wayfinder:generate
+
       - name: Build frontend assets
         run: bun run build
 
