@@ -126,6 +126,10 @@ jobs:
           echo "Checking for available Composer upgrades..."
           echo "### Composer Dependency Upgrades" >> $GITHUB_STEP_SUMMARY
 
+          # Clear vendor cache to ensure we get latest package files
+          echo "Clearing vendor cache..."
+          rm -rf vendor/hardimpactdev/craft-laravel
+
           # First ensure lock file is in sync with composer.json
           echo "Syncing lock file with composer.json..."
           composer update --no-interaction --prefer-dist --with-all-dependencies
