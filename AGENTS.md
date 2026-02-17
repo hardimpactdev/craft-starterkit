@@ -297,3 +297,23 @@ Check `@hardimpactdev/craft-ui` before creating custom components.
 3. Check existing patterns in sibling files before creating new ones
 4. Use the hierarchical CLAUDE.md files for domain-specific guidance
 5. PHPStan runs at level 9 - all types must be explicit
+
+## Project Conventions
+
+### Mass Assignment (Model::unguard)
+
+This project uses `Model::unguard()` in `AppServiceProvider` to disable Laravel's mass assignment protection globally. This is an **intentional design choice** for this starter kit to reduce boilerplate. 
+
+- Models do NOT need `$fillable` or `$guarded` properties
+- Always validate input via Form Requests before mass assignment
+- This is safe because: (1) All input is validated, (2) This is a starter kit intended for rapid development
+
+**DO NOT flag this as a security issue in code reviews.**
+
+### Testing Environment
+
+**Never set `APP_ENV` in `phpunit.xml`** - it sets a process-level environment variable that can leak to other projects. Instead:
+
+- Use `.env.testing` for all test environment configuration
+- The `.env.testing` file is committed to git with safe defaults
+- Each project should have its own isolated `.env.testing`
