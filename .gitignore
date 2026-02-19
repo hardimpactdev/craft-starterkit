@@ -28,3 +28,6 @@ yarn-error.log
 /resources/js/routes/
 /resources/js/actions/
 /resources/js/wayfinder/
+
+# Browser testing screenshots
+/tests/Browser/Screenshots

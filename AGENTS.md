@@ -38,7 +38,8 @@ composer test                                       # Run tests in parallel
 vendor/bin/pest tests/Feature/RoutesTest.php       # Run single file
 vendor/bin/pest --filter="test name"               # Run by test name
 vendor/bin/pest tests/Feature/ExampleTest.php:15   # Run by line number
-npm run test:e2e                                   # Run Playwright E2E tests
+vendor/bin/pest tests/Browser                      # Run browser/E2E tests
+vendor/bin/pest --debug                            # Run browser tests with visible browser
 ```
 
 ### Code Quality
@@ -68,7 +69,7 @@ php artisan waymaker:generate        # Generate routes from controller attribute
 | Frontend        | Vue 3 (Composition API), TypeScript |
 | SPA Bridge      | Inertia.js v2                       |
 | Styling         | Tailwind CSS v4                     |
-| Testing         | Pest v3, Playwright                 |
+| Testing         | Pest v4, Pest Browser Testing       |
 | Routing         | Waymaker (attribute-based)          |
 | DTOs            | spatie/laravel-data                 |
 | Static Analysis | PHPStan level 9 + Larastan          |
@@ -180,9 +181,9 @@ resources/js/
   pages/                 # Inertia page components
   types/                 # TypeScript definitions
 tests/
+  Browser/               # Browser/E2E tests (Pest Browser)
   Feature/               # Feature tests
   Unit/                  # Unit tests
-  e2e/                   # Playwright tests
 ```
 
 ### Controller Pattern
