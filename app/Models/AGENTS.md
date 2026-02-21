@@ -8,4 +8,4 @@ Eloquent models.
 - Always create corresponding factory in `database/factories/`
 - Always create corresponding seeder in `database/seeders/`
 - Use explicit relationship method return types
-- Define `$fillable` or `$guarded` explicitly
+- No need for `$fillable` or `$guarded` (project uses `Model::unguard()` globally, see root AGENTS.md)

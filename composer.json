@@ -89,7 +89,8 @@
         "lint": "vendor/bin/pint",
         "analyse": "vendor/bin/phpstan analyse",
         "rector": "vendor/bin/rector",
-        "check": "composer test && composer analyse",
+        "check": "composer test && composer analyse && bunx oxlint@latest && bun run oxfmt --check resources/",
+        "fix": "composer rector && composer lint && bunx oxlint@latest --fix --fix-suggestions && bun run oxfmt resources/",
         "available-updates": "composer outdated -D"
     },
     "extra": {

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use App\Models\User;
 
-it('can visit the home page', function () {
+it('can visit the home page', function (): void {
     $page = visit('/');
 
     $page->assertOk();
 });
 
-it('can sign in a user', function () {
+it('can sign in a user', function (): void {
     $user = User::factory()->create([
         'email' => 'test@example.com',
         'password' => bcrypt('password'),
@@ -26,13 +26,13 @@ it('can sign in a user', function () {
     $this->assertAuthenticated();
 });
 
-it('validates accessibility on the home page', function () {
+it('validates accessibility on the home page', function (): void {
     $page = visit('/');
 
     $page->assertNoAccessibilityIssues();
 });
 
-it('has no JavaScript errors on the home page', function () {
+it('has no JavaScript errors on the home page', function (): void {
     $page = visit('/');
 
     $page->assertNoJavaScriptErrors();

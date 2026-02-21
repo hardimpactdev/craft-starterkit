@@ -20,6 +20,10 @@ resources/CLAUDE.md           # Frontend rules (Vue, Inertia)
 tests/CLAUDE.md               # Testing rules
 ```
 
+## Required Reading
+
+Before writing code, check `docs/solutions/patterns/critical-patterns.md` for graduated patterns. These are non-obvious mistakes that have been made before — each is documented as WRONG vs CORRECT with technical explanations.
+
 ## Quick Reference: Commands
 
 ### Development
@@ -47,7 +51,8 @@ vendor/bin/pest --debug                            # Run browser tests with visi
 ```bash
 composer lint             # Format PHP with Pint
 composer analyse          # PHPStan static analysis (level 9)
-composer check            # Run tests + analyse
+composer check            # Run tests, analyse, lint (read-only)
+composer fix              # Apply auto-fixes (rector, lint, format)
 composer rector           # Run Rector upgrades
 npm run format            # Format frontend with Prettier
 npm run format:check      # Check formatting
